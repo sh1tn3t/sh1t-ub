@@ -1,6 +1,8 @@
+from lightdb import LightDB
 from pyrogram import Client
 
+
+db = LightDB("./db.json")
 app = Client(
-    "pyrobot", api_id = "ID", parse_mode = "html",
-    api_hash = "HASH"
+    "../sh1t-ub", parse_mode = "html", config_file = "./config.ini"
 )

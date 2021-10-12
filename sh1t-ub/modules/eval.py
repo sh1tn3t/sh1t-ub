@@ -1,6 +1,7 @@
 import traceback
 import html
 
+from lightdb import LightDB
 from pyrogram import Client, types
 from meval import meval
 
@@ -14,23 +15,23 @@ class EvaluatorMod(loader.Module):
     """
     strings = {"name": "Evaluator"}
 
-    async def init(self, app: Client):
-        self.app = app
+    async def init(self, db: LightDB):
+        self.db = db
 
     async def x_cmd(self, app: Client, message: types.Message):
         """Выполнить python-код"""
-        return await self.execute(message)
+        return await self.execute(app, message)
 
     async def e_cmd(self, app: Client, message: types.Message):
         """Выполнить python-код и возвратить результат"""
-        return await self.execute(message, True)
+        return await self.execute(app, message, True)
 
-    async def execute(self, message: types.Message, return_it: bool = False):
+    async def execute(self, app: Client, message: types.Message, return_it: bool = False):
         try:
             args = utils.get_args(message.text)
             result = html.escape(
                 str(
-                    await meval(args, globals(), **await self.getattrs(message)))
+                    await meval(args, globals(), **await self.getattrs(app, message)))
             )
             output = (
                 f"<b>Выполненное выражение:</b>\n"
@@ -48,19 +49,17 @@ class EvaluatorMod(loader.Module):
             )
 
         if return_it:
-            await message.edit(
-                f"{out[0]}</code>")
+            await message.edit(f"{out[0]}</code>")
             for part in out[1:]:
-                await message.reply(
-                    f"<code>{part}</code>")
+                await message.reply(f"<code>{part}</code>")
 
-    async def getattrs(self, message: types.Message):
+    async def getattrs(self, app: Client, message: types.Message):
         return {
             "self": self,
-            "reply": message.reply_to_message,
+            "app": app,
             "message": message,
-            "app": self.app,
             "chat": message.chat,
             "user": message.from_user,
+            "reply": message.reply_to_message,
             "ruser": message.reply_to_message.from_user if message.reply_to_message else None
         }

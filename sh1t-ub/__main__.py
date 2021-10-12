@@ -1,6 +1,6 @@
 import logging
 from . import main, logger
-from .misc import app
+from .misc import app, db
 
 
 
@@ -12,7 +12,7 @@ def cli():
     ])
     logging.info("Started successful")
 
-    app.run(main.main(app))
+    app.run(main.main(app, db))
     logging.info("Shutting down...")
 
 

@@ -1,10 +1,12 @@
 import os
 import sys
 import asyncio
+import logging
 
 import importlib
 import importlib.util
 
+from lightdb import LightDB
 from pyrogram import Client
 
 
@@ -12,18 +14,17 @@ from pyrogram import Client
 class Module:
     strings = {"name": "Unknown"}
 
-    async def init(self, app: Client): # TODO db: db
+    async def init(self, db: LightDB): #, app: Client, db: db):
         """Какая-то локальная фигня, я не могу это описать, но я сам понимаю зывазхщвапазхвпщ"""
 
 
 class Modules:
-    def __init__(self, app: Client):
+    def __init__(self, db: LightDB):
         self.commands = {}
         self.watchers = []
         self.modules = []
-        self.modules_path = "sh1t-ub/handlers/"
-        self.app = app
-        # self.db = db  : from .misc import db
+        self.modules_path = "sh1t-ub/modules/"
+        self.db = db
 
     async def register_all(self):
         modules = filter(
@@ -31,7 +32,7 @@ class Modules:
         )
 
         for module in modules:
-            module_name = f"sh1t-ub.handlers.{module[:-3]}"
+            module_name = f"sh1t-ub.modules.{module[:-3]}"
             file_path = os.path.join(
                 os.path.abspath("."), self.modules_path, module
             )
@@ -56,12 +57,12 @@ class Modules:
                 *[self.send_init_one(module) for module in self.modules]
             )
         except Exception as error:
-            print(f"Произошла ошибки при отправки init в модуль. Ошибка: {error}")
+            logging.error(f"Произошла ошибки при отправки init в модуль. Ошибка: {error}")
 
         return True
 
     async def send_init_one(self, module: Module):
-        await module.init(self.app)
+        await module.init(self.db)
 
         module.allmodules = self
         module.commands = self.get_commands(module)
@@ -84,4 +85,7 @@ class Modules:
         }
 
     async def restart(self):
+        self.commands = {}
+        self.watchers = []
+        self.modules = []
         await self.register_all()
