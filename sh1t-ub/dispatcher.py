@@ -17,13 +17,15 @@ class Dispatcher:
         if not message.outgoing:
             return
 
-        command, args = get_full_command(str(message.text)) # Потому что сука нахуя делать https://my.fl1yd.su/pics/ZCO1j.png,
-                                                            # pyrogram/types/messages_and_media/message.py, 54-55 строка
-                                                            # из-за этого ошибки UnicodeDecodeError
+        command, args = get_full_command(message)
         if not (command or args):
             return
 
-        if not (func_cmd := self.modules.commands.get(command.lower())):
+        aliases = self.modules.db.get("aliases", {})
+        command = aliases.get(command, command)
+
+        func_cmd = self.modules.commands.get(command.lower())
+        if not func_cmd:
             return
 
         try:

@@ -10,7 +10,7 @@ class HelpMod(loader.Module):
 
     async def help_cmd(self, app: Client, message: types.Message):
         """Список всех модулей"""
-        args = utils.get_args(message.text)
+        args = utils.get_args(message)
 
         if not args:
             msg = "\n".join(

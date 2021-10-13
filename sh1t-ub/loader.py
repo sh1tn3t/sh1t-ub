@@ -7,14 +7,13 @@ import importlib
 import importlib.util
 
 from lightdb import LightDB
-from pyrogram import Client
 
 
 
 class Module:
     strings = {"name": "Unknown"}
 
-    async def init(self, db: LightDB): #, app: Client, db: db):
+    async def init(self, db: LightDB):
         """Какая-то локальная фигня, я не могу это описать, но я сам понимаю зывазхщвапазхвпщ"""
 
 
@@ -80,7 +79,7 @@ class Modules:
 
     def get_commands(self, module: Module):
         return {
-            method_name[:-4]: getattr(module, method_name) for method_name in dir(module)
+            method_name[:-4].lower(): getattr(module, method_name) for method_name in dir(module)
             if callable(getattr(module, method_name)) and method_name[-4:] == "_cmd"
         }
 

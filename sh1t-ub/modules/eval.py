@@ -27,8 +27,9 @@ class EvaluatorMod(loader.Module):
         return await self.execute(app, message, True)
 
     async def execute(self, app: Client, message: types.Message, return_it: bool = False):
+        args = utils.get_args(message)
+
         try:
-            args = utils.get_args(message.text)
             result = html.escape(
                 str(
                     await meval(args, globals(), **await self.getattrs(app, message)))
