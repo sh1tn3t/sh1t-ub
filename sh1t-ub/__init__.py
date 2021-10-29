@@ -1,5 +1,5 @@
 __authors__ = "Sh1tN3t - @sh1tn3t"
-__version__ = "0.21"
+__version__ = "0.3"
 
 change_log = """
 Буду сюда писать по поводу изменений.
