@@ -42,11 +42,12 @@ class EvaluatorMod(loader.Module):
             )
             out = [output[i: i + 4083] for i in range(0, len(output), 4083)]
         except Exception:
-            return await message.edit(
+            return await utils.answer(
+                message,
                 f"<b>Не удалось выполнить:</b>\n"
                 f"<code>{args}</code>\n\n"
                 f"<b>Ошибка:</b>\n"
-                f"<code>{traceback.format_exc(0, True)}</code>"
+                f"<code>{html.escape(traceback.format_exc(0, True))}</code>"
             )
 
         if return_it:
@@ -57,6 +58,7 @@ class EvaluatorMod(loader.Module):
     async def getattrs(self, app: Client, message: types.Message):
         return {
             "self": self,
+            "db": self.db,
             "app": app,
             "message": message,
             "chat": message.chat,

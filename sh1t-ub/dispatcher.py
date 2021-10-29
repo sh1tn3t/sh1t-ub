@@ -1,6 +1,6 @@
 import logging
 
-from pyrogram import Client, types, errors
+from pyrogram import Client, types
 
 from .loader import Modules
 from .utils import get_full_command
@@ -30,7 +30,7 @@ class Dispatcher:
 
         try:
             await func_cmd(app, message)
-        except errors.RPCError as error:
+        except Exception as error:
             try:
                 await message.reply(f"Ошибка: {error}")
             finally:

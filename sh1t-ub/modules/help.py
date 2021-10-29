@@ -15,19 +15,20 @@ class HelpMod(loader.Module):
         if not args:
             msg = "\n".join(
                 f"• <b>{module.strings['name']}</b> ➜ {'<b>,</b> '.join(f'<code>{command}</code>' for command in module.commands)}"
-                for module in self.allmodules.modules
+                for module in self.all_modules.modules
             )
-            return await message.edit(
-                f"Доступные команды Sh1t-UB:\n\n{msg}")
+            return await utils.answer(
+                message, f"Доступные команды Sh1t-UB:\n\n{msg}")
 
-        module = [
-            module for module in self.allmodules.modules
-            if module.strings["name"].lower() == args.lower()
-        ]
+        module = list(
+            filter(
+                lambda m: m.strings["name"].lower() == args.lower(), self.all_modules.modules
+            )
+        )
 
         if not module:
-            return await message.edit(
-                "Такого модуля нет")
+            return await utils.answer(
+                message, "Такого модуля нет")
 
         [module] = module
         msg = "\n".join(
@@ -36,7 +37,8 @@ class HelpMod(loader.Module):
             for command in module.commands
         )
 
-        return await message.edit(
+        return await utils.answer(
+            message,
             f"Описание модуля <u>{module.strings['name']}</u>:\n\n"
             f"• {module.__doc__ or 'Нет описания для модуля'}\n"
             f"{msg}"
