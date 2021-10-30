@@ -1,6 +1,6 @@
 import logging
 
-from pyrogram import Client, filters, types
+from pyrogram import Client, types
 
 from .loader import Modules
 from .utils import get_full_command
