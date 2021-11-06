@@ -13,10 +13,8 @@ from importlib.abc import SourceLoader
 from importlib.machinery import ModuleSpec
 from importlib.util import spec_from_file_location, module_from_spec
 
-from lightdb import LightDB
-
-from . import utils
-
+from pyrogram import filters
+from . import utils, database
 
 
 class StringLoader(SourceLoader):
@@ -33,10 +31,10 @@ class StringLoader(SourceLoader):
 
         return compile(source, self.origin, "exec", dont_inherit = True)
 
-    def get_filename(self, full_name: str):
+    def get_filename(self, _: str):
         return self.origin
 
-    def get_data(self, file_name: str):
+    def get_data(self, _: str):
         return self.data
 
 
@@ -45,14 +43,14 @@ class Module:
 
     strings = {"name": "Unknown"}
 
-    async def init(self, db: LightDB):
-        """Какая-то локальная фигня, я не могу это описать, но я сам понимаю зывазхщвапазхвпщ"""
+    async def init(self, db: database.Database):
+        """Отсылает данные модулю"""
 
 
 class Modules:
-    def __init__(self, db: LightDB):
+    def __init__(self, db: database.Database):
         self.commands = {}
-        self.aliases = db.get("aliases", {})
+        self.aliases = db.get(__name__, "aliases", {})
         self.watchers = []
         self.modules = []
         self.modules_path = "sh1t-ub/modules/"
@@ -60,7 +58,7 @@ class Modules:
 
     async def register_all(self):
         local_modules = filter(
-            lambda file_name: (file_name.endswith(".py") and file_name[0] != "_"), os.listdir(self.modules_path)
+            lambda file_name: (file_name.endswith(".py") and not file_name.startswith("_")), os.listdir(self.modules_path)
         )
 
         for module in local_modules:
@@ -72,16 +70,18 @@ class Modules:
             try:
                 self.register_module(module_name, file_path)
             except Exception as error:
-                logging.error(f"Ошибка при загрузке модуля {module_name}: {error}")
+                logging.error(
+                    f"Ошибка при загрузке модуля {module_name}: {error}")
 
         await self.send_init()
 
-        for module in self.db.get("modules", []):
+        for module in self.db.get(__name__, "modules", []):
             try:
                 r = await utils.run_sync(requests.get, module)
                 module_name = await self.load_module(r.text, r.url)
             except requests.exceptions.ConnectionError as error:
-                logging.error(f"Ошибка при загрузке модуля {module}: {error}")
+                logging.error(
+                    f"Ошибка при загрузке модуля {module}: {error}")
 
     def register_module(self, module_name: str, file_path: str = None, spec: ModuleSpec = None):
         spec = spec or spec_from_file_location(module_name, file_path)
@@ -102,14 +102,15 @@ class Modules:
         return instance
 
     async def load_module(self, module_source: str, origin = "<string>"):
-        module_name = f"sh1t-ub.modules." + "".join(random.choice(string.ascii_letters + string.digits) for _ in range(10))
+        module_name = "sh1t-ub.modules." + "".join(random.choice(string.ascii_letters + string.digits) for _ in range(10))
 
         try:
             spec = ModuleSpec(module_name, StringLoader(module_source, origin), origin = origin)
             instance = self.register_module(module_name, spec = spec)
             await self.send_init_one(instance)
         except Exception as error:
-            logging.error(f"Ошибка при загрузке модуля {origin}: {error}")
+            logging.error(
+                f"Ошибка при загрузке модуля {origin}: {error}")
             return False
 
         return instance.strings["name"]
@@ -120,7 +121,8 @@ class Modules:
                 *[self.send_init_one(module) for module in self.modules]
             )
         except Exception as error:
-            logging.error(f"Произошла ошибки при отправки init в модуль. Ошибка: {error}")
+            logging.error(
+                f"Произошла ошибки при отправки init в модуль. Ошибка: {error}")
 
         return True
 
@@ -128,7 +130,7 @@ class Modules:
         await module.init(self.db)
 
         module.all_modules = self
-        module.commands = self.get_commands(module)
+        module.commands = get_commands(module)
 
         self.commands.update(module.commands)
         if hasattr(module, "watcher"):
@@ -140,7 +142,7 @@ class Modules:
         if not (
             module := list(
                 filter(
-                    lambda module: module.strings["name"].lower() == module_name.lower(), self.modules 
+                    lambda module: module.strings["name"].lower() == module_name.lower(), self.modules
                 )
             )
         ):
@@ -148,7 +150,7 @@ class Modules:
 
         module = module[0]
         if (get_module := inspect.getmodule(module)).__spec__.origin != "<string>":
-            self.db.set("modules", list(set(self.db.get("modules", [])) - set([get_module.__spec__.origin])))
+            self.db.set("sh1t-ub.loader", "modules", list(set(self.db.get(__name__, "modules", [])) - set([get_module.__spec__.origin])))
 
         self.modules.remove(module)
         if hasattr(module, "watcher"):
@@ -161,8 +163,20 @@ class Modules:
 
         return module.strings["name"]
 
-    def get_commands(self, module: Module):
-        return {
-            method_name[:-4].lower(): getattr(module, method_name) for method_name in dir(module)
-            if callable(getattr(module, method_name)) and method_name[-4:] == "_cmd"
-        }
+
+def get_commands(module: Module):
+    return {
+        method_name[:-4].lower(): getattr(module, method_name) for method_name in dir(module)
+        if callable(getattr(module, method_name)) and method_name[-4:] == "_cmd"
+    }
+
+def on(filter_func):
+    def decorator(func):
+        func.filter = (
+            filters.create(filter_func)
+            if filter_func.__module__ != "pyrogram.filters"
+            else filter_func
+        )
+        return func
+
+    return decorator

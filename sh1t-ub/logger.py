@@ -4,7 +4,6 @@ from typing import List, Union
 from loguru import logger
 
 
-
 class InterceptHandler(logging.Handler):
     def emit(self, record):
         try:

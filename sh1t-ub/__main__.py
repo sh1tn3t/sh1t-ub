@@ -2,9 +2,16 @@ import os
 import logging
 import configparser
 
-from . import main, logger
-from .misc import app, db
+from pyrogram import Client
 
+from . import main, logger, database, __version__
+
+
+db = database.Database("./db.json")
+app = Client(
+    "../sh1t-ub", config_file = "./config.ini",
+    parse_mode = "html", app_version = f"Sh1t-UB v{__version__}"
+)
 
 
 def config_setup():
@@ -28,7 +35,6 @@ def cli():
         "pyrogram.methods.utilities.idle"
     ])
 
-    logging.info("Started successful")
     app.run(main.main(app, db))
     logging.info("Shutting down...")
 
