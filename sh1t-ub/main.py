@@ -1,4 +1,5 @@
 import logging
+import asyncio
 
 from pyrogram import Client, filters, idle
 from pyrogram.handlers import MessageHandler
@@ -6,13 +7,16 @@ from pyrogram.handlers import MessageHandler
 from . import loader, dispatcher, database
 
 
-async def main(app: Client, db: database.Database):
-    db.init()
+async def main(app: Client):
+    global db
 
     await app.start()
-    await (modules := loader.Modules(db)).register_all()
+    await (cloud_db := database.CloudDatabase(app)).find_data_chat()
 
+    db = database.Database("./db.json", cloud_db)
+    await (modules := loader.Modules(db)).register_all()
     dp = dispatcher.Dispatcher(modules)
+
     app.add_handler(
         MessageHandler(
             dp.handle_message, filters.all)

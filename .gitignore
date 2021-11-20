@@ -1,4 +1,8 @@
-__pycache__
+# Папки
+__pycache__/
+downloads/
+
+# Файлы
 *session*
 config.ini
 db.json

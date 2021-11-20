@@ -1,7 +1,7 @@
 from pyrogram import Client, types
 from datetime import datetime
 
-from .. import loader
+from .. import loader, utils
 
 
 class TesterMod(loader.Module):
@@ -9,18 +9,17 @@ class TesterMod(loader.Module):
 
     strings = {"name": "Tester"}
 
-    async def ping_cmd(self, app: Client, message: types.Message):
+    async def ping_cmd(self, app: Client, message: types.Message, args: str):
         """Пингует"""
-        args = message.get_args()
+        count = 5
         ping_msg, ping_data = [], []
 
-        count = 5
         if args and args.isdigit():
             count = int(args)
 
         for _ in range(count):
             start = datetime.now()
-            msg = await app.send_message("me", "ping")
+            msg = await app.send_message("me", "ping?")
             ms = (datetime.now() - start).microseconds / 1000
 
             ping_data.append(ms)
@@ -28,6 +27,8 @@ class TesterMod(loader.Module):
 
         ping = sum(ping_data) / len(ping_data)
 
-        await message.answer(f"[ok] {str(ping)[:5]}ms")
+        await utils.answer(message, f"[ok] {str(ping)[:5]}ms")
         for msg in ping_msg:
             await msg.delete()
+
+        return

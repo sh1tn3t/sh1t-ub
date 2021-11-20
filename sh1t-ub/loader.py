@@ -14,7 +14,7 @@ from importlib.machinery import ModuleSpec
 from importlib.util import spec_from_file_location, module_from_spec
 
 from pyrogram import filters
-from . import utils, database
+from . import utils, database, __version__
 
 
 class StringLoader(SourceLoader):
@@ -129,6 +129,7 @@ class Modules:
     async def send_init_one(self, module: Module):
         await module.init(self.db)
 
+        module.sh1t_version = __version__
         module.all_modules = self
         module.commands = get_commands(module)
 

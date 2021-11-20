@@ -1,5 +1,5 @@
 pyrogram
 tgcrypto
 loguru
-lightdb
-git
+lightdb==1.1.1
+gitpython

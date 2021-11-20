@@ -4,10 +4,9 @@ import configparser
 
 from pyrogram import Client
 
-from . import main, logger, database, __version__
+from . import main, logger, __version__
 
 
-db = database.Database("./db.json")
 app = Client(
     "../sh1t-ub", config_file = "./config.ini",
     parse_mode = "html", app_version = f"Sh1t-UB v{__version__}"
@@ -26,7 +25,7 @@ def config_setup():
 
 
 def cli():
-    if not os.path.exists("config.ini"):
+    if not os.path.exists("./config.ini"):
         config_setup()
 
     logger.setup_logger(ignored = [
@@ -35,7 +34,7 @@ def cli():
         "pyrogram.methods.utilities.idle"
     ])
 
-    app.run(main.main(app, db))
+    app.run(main.main(app))
     logging.info("Shutting down...")
 
 
