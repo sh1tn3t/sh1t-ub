@@ -1,3 +1,19 @@
+#    Sh1t-UB (telegram userbot by sh1tn3t)
+#    Copyright (C) 2021 Sh1tN3t
+
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 import os
 import sys
 
@@ -29,7 +45,7 @@ class StringLoader(SourceLoader):
         if not source:
             return None
 
-        return compile(source, self.origin, "exec", dont_inherit = True)
+        return compile(source, self.origin, "exec", dont_inherit=True)
 
     def get_filename(self, _: str):
         return self.origin
@@ -48,6 +64,8 @@ class Module:
 
 
 class Modules:
+    """Класс, хранящий в себе загруженные модули"""
+
     def __init__(self, db: database.Database):
         self.commands = {}
         self.aliases = db.get(__name__, "aliases", {})
@@ -58,7 +76,10 @@ class Modules:
 
     async def register_all(self):
         local_modules = filter(
-            lambda file_name: (file_name.endswith(".py") and not file_name.startswith("_")), os.listdir(self.modules_path)
+            lambda file_name: (
+                file_name.endswith(".py")
+                and not file_name.startswith("_")
+            ), os.listdir(self.modules_path)
         )
 
         for module in local_modules:
@@ -101,12 +122,15 @@ class Modules:
 
         return instance
 
-    async def load_module(self, module_source: str, origin = "<string>"):
-        module_name = "sh1t-ub.modules." + "".join(random.choice(string.ascii_letters + string.digits) for _ in range(10))
+    async def load_module(self, module_source: str, origin: str = "<string>"):
+        module_name = "sh1t-ub.modules." + \
+            "".join(random.choice(string.ascii_letters + string.digits)
+                    for _ in range(10))
 
         try:
-            spec = ModuleSpec(module_name, StringLoader(module_source, origin), origin = origin)
-            instance = self.register_module(module_name, spec = spec)
+            spec = ModuleSpec(module_name, StringLoader(
+                module_source, origin), origin=origin)
+            instance = self.register_module(module_name, spec=spec)
             await self.send_init_one(instance)
         except Exception as error:
             logging.error(
@@ -134,8 +158,8 @@ class Modules:
         module.commands = get_commands(module)
 
         self.commands.update(module.commands)
-        if hasattr(module, "watcher"):
-            self.watchers.append(module.watcher)
+        for watcher in filter(lambda attr: attr.startswith("watcher"), dir(module)):
+            self.watchers.append(getattr(module, watcher))
 
         return True
 
@@ -143,7 +167,8 @@ class Modules:
         if not (
             module := list(
                 filter(
-                    lambda module: module.strings["name"].lower() == module_name.lower(), self.modules
+                    lambda module: module.strings["name"].lower(
+                    ) == module_name.lower(), self.modules
                 )
             )
         ):
@@ -151,11 +176,12 @@ class Modules:
 
         module = module[0]
         if (get_module := inspect.getmodule(module)).__spec__.origin != "<string>":
-            self.db.set("sh1t-ub.loader", "modules", list(set(self.db.get(__name__, "modules", [])) - set([get_module.__spec__.origin])))
+            self.db.set("sh1t-ub.loader", "modules",
+                        list(set(self.db.get(__name__, "modules", [])) - set([get_module.__spec__.origin])))
 
         self.modules.remove(module)
-        if hasattr(module, "watcher"):
-            self.watchers.remove(module.watcher)
+        for watcher in filter(lambda attr: attr.startswith("watcher"), dir(module)):
+            self.watchers.remove(getattr(module, watcher))
 
         for alias, command in self.aliases.copy().items():
             if command in module.commands:
@@ -167,9 +193,14 @@ class Modules:
 
 def get_commands(module: Module):
     return {
-        method_name[:-4].lower(): getattr(module, method_name) for method_name in dir(module)
-        if callable(getattr(module, method_name)) and method_name[-4:] == "_cmd"
+        method_name[:-4].lower(): getattr(module, method_name)
+                                  for method_name in dir(module)
+        if (
+            callable(getattr(module, method_name))
+            and method_name[-4:] == "_cmd"
+        )
     }
+
 
 def on(filter_func):
     def decorator(func):

@@ -1,3 +1,19 @@
+#    Sh1t-UB (telegram userbot by sh1tn3t)
+#    Copyright (C) 2021 Sh1tN3t
+
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 from pyrogram import Client, types
 
 from .. import loader, utils, database
@@ -13,8 +29,7 @@ class SettingsMod(loader.Module):
 
     async def setprefix_cmd(self, app: Client, message: types.Message, args: str):
         """Изменить префикс, можно несколько штук"""
-        args = list(message.get_args())
-        if not args:
+        if not (args := list(args)):
             return await utils.answer(
                 message, "На какой префикс нужно изменить?")
 
@@ -25,14 +40,15 @@ class SettingsMod(loader.Module):
 
     async def addalias_cmd(self, app: Client, message: types.Message, args: str):
         """Добавить алиас. Использование: addalias <новый алиас> <команда>"""
-        args = message.get_args().lower().split(maxsplit = 1)
-        if not args:
+        if not (args := args.lower().split(maxsplit=1)):
             return await utils.answer(
                 message, "Какой алиас нужно добавить?")
 
         if len(args) != 2:
             return await utils.answer(
-                message, "Неверно указаны аргументы. Правильно: addalias <новый алиас> <команда>")
+                message, "Неверно указаны аргументы."
+                         "Правильно: addalias <новый алиас> <команда>"
+            )
 
         aliases = self.db.get("sh1t-ub.loader", "aliases", {})
         if args[0] in aliases:
@@ -49,10 +65,9 @@ class SettingsMod(loader.Module):
         return await utils.answer(
             message, f"Алиас {args[0]} для команды {args[1]} был добавлен")
 
-    async def delalias_cmd(self, app: Client, message: types.Message):
+    async def delalias_cmd(self, app: Client, message: types.Message, args: str):
         """Удалить алиас. Использование: delalias <алиас>"""
-        args = message.get_args().lower()
-        if not args:
+        if not (args := args.lower()):
             return await utils.answer(
                 message, "Какой алиас нужно удалить?")
 

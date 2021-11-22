@@ -1,3 +1,19 @@
+#    Sh1t-UB (telegram userbot by sh1tn3t)
+#    Copyright (C) 2021 Sh1tN3t
+
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 from pyrogram import Client, types
 
 from .. import loader, utils
@@ -11,16 +27,20 @@ class HelpMod(loader.Module):
     async def help_cmd(self, app: Client, message: types.Message, args: str):
         """Список всех модулей"""
         if not args:
-            msg = "\n".join(
-                f"• <b>{module.strings['name']}</b> ➜ {'<b>,</b> '.join(f'<code>{command}</code>' for command in module.commands)}"
-                for module in self.all_modules.modules
-            )
+            for module in self.all_modules.modules: 
+                commands = "<b>,</b> ".join(
+                    f"<code>{command}</code>" for command in module.commands)
+                msg = "\n".join(
+                    f"• <b>{module.strings['name']}</b> ➜ {commands}"
+                    for module in self.all_modules.modules
+                )
             return await utils.answer(
-                message, f"Доступные команды SUB(sh1tn3t userbot):\n\n{msg}")
+                message, f"Доступные команды SUB(sh1tn3t userbot):\n\n" + msg)
 
         module = list(
             filter(
-                lambda m: m.strings["name"].lower() == args.lower(), self.all_modules.modules
+                lambda m: m.strings["name"].lower() == args.lower(
+                ), self.all_modules.modules
             )
         )
 
