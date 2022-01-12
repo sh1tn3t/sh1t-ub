@@ -7,12 +7,14 @@
 #    (at your option) any later version.
 
 #    This program is distributed in the hope that it will be useful,
-#    but WITHOUT ANY WARRANTY; without even the implied warranty of 
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
 #    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 #    GNU General Public License for more details.
 
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+import asyncio
 
 from pyrogram import Client, types
 from typing import Union
@@ -24,7 +26,8 @@ class CloudDatabase:
     def __init__(self, app: Client):
         self.app = app
         self.me = None
-        self.data_chat = None
+        self.data_chat = asyncio.get_event_loop().create_task(
+            self.find_data_chat())
 
     async def find_data_chat(self):
         """Информация о чате с данными"""

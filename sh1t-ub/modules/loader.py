@@ -24,34 +24,30 @@ import tempfile
 from git import Repo
 from pyrogram import Client, types
 
-from .. import loader, utils, database
+from .. import loader, utils
 
 
+@loader.module(name="Loader", author="sh1tn3t")
 class LoaderMod(loader.Module):
     """Загрузчик модулей"""
-
-    strings = {"name": "Loader"}
-
-    async def init(self, db: database.Database):
-        self.db = db
 
     async def dlmod_cmd(self, app: Client, message: types.Message, args: str):
         """Загрузить модуль по ссылке"""
         if not args:
             return await utils.answer(
-                message, "Нет ссылки на модуль")
+                message, f"Нет ссылки на модуль")
 
         try:
             r = await utils.run_sync(requests.get, args)
             if not (module_name := await self.all_modules.load_module(r.text, r.url)):
                 return await utils.answer(
-                    message, "Не удалось загрузить модуль")
+                    message, "Не удалось загрузить модуль. Доп. информацию смотри в логах")
         except requests.exceptions.ConnectionError:
             return await utils.answer(
                 message, "Модуль недоступен по ссылке")
 
         self.db.set("sh1t-ub.loader", "modules",
-                    list(set(self.db.get("sh1t-ub.loader", "modules", []) + [args])))
+                    list({*self.db.get("sh1t-ub.loader", "modules", []) + [args]}))
         return await utils.answer(
             message, f"Модуль \"{module_name}\" загружен")
 
@@ -59,7 +55,7 @@ class LoaderMod(loader.Module):
         """Загрузить модуль по файлу"""
         if not (file := message if message.document else message.reply_to_message):
             return await utils.answer(
-                message, "Нет реплая на файл")
+                message, "Не указан путь до файла или нет реплая на файл")
 
         temp_file = tempfile.NamedTemporaryFile("w")
         await file.download(temp_file.name)
@@ -72,7 +68,7 @@ class LoaderMod(loader.Module):
 
         if not (module_name := await self.all_modules.load_module(module_source)):
             return await utils.answer(
-                message, "Не удалось загрузить модуль")
+                message, "Не удалось загрузить модуль. Доп. информацию смотри в логах")
 
         temp_file.close()
         return await utils.answer(

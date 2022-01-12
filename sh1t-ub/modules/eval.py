@@ -20,16 +20,12 @@ import html
 from pyrogram import Client, types
 from meval import meval
 
-from .. import loader, utils, database
+from .. import loader, utils
 
 
+@loader.module(name="Executor", author="sh1tn3t")
 class EvaluatorMod(loader.Module):
     """Выполняет python-код"""
-
-    strings = {"name": "Evaluator"}
-
-    async def init(self, db: database.Database):
-        self.db = db
 
     async def exec_cmd(self, app: Client, message: types.Message, args: str):
         """Выполнить python-код"""
@@ -46,10 +42,11 @@ class EvaluatorMod(loader.Module):
         args: str,
         return_it: bool = False
     ):
+        """Выполняет код"""
         try:
             result = html.escape(
                 str(
-                    await meval(args, globals(), **await self.getattrs(app, message)))
+                    await meval(args, globals(), **self.getattrs(app, message)))
             )
         except Exception:
             return await utils.answer(
@@ -72,7 +69,7 @@ class EvaluatorMod(loader.Module):
             for output in outputs[1:]:
                 await message.reply(f"<code>{output}</code>")
 
-    async def getattrs(self, app: Client, message: types.Message):
+    def getattrs(self, app: Client, message: types.Message):
         return {
             "self": self,
             "db": self.db,
@@ -81,5 +78,5 @@ class EvaluatorMod(loader.Module):
             "chat": message.chat,
             "user": message.from_user,
             "reply": message.reply_to_message,
-            "ruser": message.reply_to_message.from_user if message.reply_to_message else None
+            "ruser": getattr(message.reply_to_message, "from_user", None)
         }

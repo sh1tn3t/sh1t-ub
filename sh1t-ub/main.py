@@ -15,22 +15,26 @@
 #    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import logging
-import asyncio
 
-from pyrogram import Client, filters, idle
+from pyrogram import filters
 from pyrogram.handlers import MessageHandler
+from pyrogram.session.session import Session
+from pyrogram.methods.utilities.idle import idle
 
-from . import loader, dispatcher, database
+from . import auth, database, loader, dispatcher
+
+Session.notice_displayed = True
+db: database.Database = None
 
 
-async def main(app: Client):
+async def main():
+    app = await auth.Auth().authorize()
+    await app.initialize()
+
     global db
 
-    await app.start()
-    await (cloud_db := database.CloudDatabase(app)).find_data_chat()
-
-    db = database.Database("./db.json", cloud_db)
-    await (modules := loader.Modules(db)).register_all()
+    db = database.Database("./db.json", app)
+    modules = loader.Modules(db)
     dp = dispatcher.Dispatcher(modules)
 
     app.add_handler(
@@ -38,8 +42,8 @@ async def main(app: Client):
             dp.handle_message, filters.all)
     )
 
-    if (restart_msg := db.get("sh1t-ub.loader", "restart_msg", None)):
-        msg = await app.get_messages(*list(map(int, restart_msg.split(":"))))
+    if (restart_msg := db.get("sh1t-ub.loader", "restart_msg")):
+        msg = await app.get_messages(*map(int, restart_msg.split(":")))
         if (
             not msg.empty
             and msg.text != (
@@ -51,6 +55,10 @@ async def main(app: Client):
 
     prefixes = db.get("sh1t-ub.loader", "prefixes", ["-"])
     logging.info(
-        f"Стартовал для {(await app.get_me()).id} успешно! Введи {prefixes[0]}help в чате")
+        f"Стартовал для [ID: {(await app.get_me()).id}] успешно, введи {prefixes[0]}help в чате для получения списка команд"
+    )
 
     await idle()
+
+    logging.info("Завершение работы...")
+    return True

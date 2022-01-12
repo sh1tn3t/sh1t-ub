@@ -14,16 +14,18 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import io
+import logging
+
 from pyrogram import Client, types
 from datetime import datetime
 
 from .. import loader, utils
 
 
+@loader.module(name="Tester", author="sh1tn3t")
 class TesterMod(loader.Module):
     """Тест чего-то"""
-
-    strings = {"name": "Tester"}
 
     async def ping_cmd(self, app: Client, message: types.Message, args: str):
         """Пингует"""
@@ -48,3 +50,31 @@ class TesterMod(loader.Module):
             await msg.delete()
 
         return
+
+    async def logs_cmd(self, app: Client, message: types.Message, args: str):
+        """Логи"""
+        lvl = 40  # ERROR
+
+        if args:
+            lvl = (
+                int(args) if args.isdigit()
+                else getattr(logging, args.upper(), None)
+            )
+            if not isinstance(lvl, int):
+                return await utils.answer(
+                    message, "Неверный уровень логов")
+
+        handler = logging.getLogger().handlers[0]
+        logs = ("\n".join(handler.dumps(lvl))).encode("utf-8")
+        if not logs:
+            return await utils.answer(
+                message, f"Нет логов на уровне {lvl} ({logging.getLevelName(lvl)})")
+
+        logs = io.BytesIO(logs)
+        logs.name = "sh1t-ub.log"
+
+        await message.delete()
+        return await utils.answer(
+            message, logs, doc=True, quote=False,
+            caption=f"Sh1t-UB Логи с {lvl} ({logging.getLevelName(lvl)}) уровнем"
+        )

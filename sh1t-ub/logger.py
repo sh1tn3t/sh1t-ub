@@ -16,29 +16,108 @@
 
 import logging
 
-from typing import List, Union
+from typing import List
+from datetime import datetime
+
+from loguru._better_exceptions import ExceptionFormatter
+from loguru._colorizer import Colorizer
 from loguru import logger
 
-
-class InterceptHandler(logging.Handler):
-    """Крутое логирование"""
-
-    def emit(self, record):
-        try:
-            level = logger.level(record.levelname).name
-        except ValueError:
-            level = record.levelno
-
-        frame, depth = logging.currentframe(), 2
-        while frame.f_code.co_filename == logging.__file__:
-            frame = frame.f_back
-            depth += 1
-
-        logger.opt(depth=depth, exception=record.exc_info).log(
-            level, record.getMessage())
+FORMAT_FOR_FILES = (
+    "{time:%Y-%m-%d %H:%M:%S} | "
+    "{level: <8} | "
+    "{name}:{function}:{line} - {message}"
+)
 
 
-def setup_logger(level: Union[str, int] = "INFO", ignored: List[str] = ""):
-    logging.basicConfig(handlers=[InterceptHandler()], level=logging.getLevelName(level))
+class StreamHandler(logging.Handler):
+    """Обработчик логирования в поток"""
+
+    def __init__(self):
+        super().__init__(20)
+
+    def format(self, record: logging.LogRecord):
+        """Форматирует логи под нужный формат"""
+        exception_lines = ""
+        stripped_formatter = Colorizer.prepare_format(
+            FORMAT_FOR_FILES + "{exception}"
+        ).strip()
+
+        if record.exc_info:
+            exception_formatter = ExceptionFormatter(
+                encoding="utf8", backtrace=True, prefix="\n",
+                hidden_frames_filename=logger.catch.__code__.co_filename
+            )
+
+            type_, value, tb = record.exc_info
+            exception_list = exception_formatter.format_exception(type_, value, tb)
+            exception_lines = "".join(exception_list)
+
+        return stripped_formatter.format(
+            time=datetime.fromtimestamp(record.created), level=record.levelname,
+            name=record.name, function=record.funcName, message=record.msg,
+            line=record.lineno, exception=exception_lines
+        )
+
+
+class MemoryHandler(logging.Handler):
+    """Обработчик логирования в память"""
+
+    def __init__(self, target: logging.Handler, lvl: int = logging.INFO):
+        super().__init__(0)
+        self.target = target
+        self.lvl = lvl
+
+        self.capacity = 500
+        self.buffer = []
+        self.handled_buffer = []
+
+    def dumps(self, lvl: int):
+        """Возвращает список всех входящих логов по минимальному уровню"""
+        sorted_logs = list(
+            filter(
+                lambda record: record.levelno >= lvl, self.handled_buffer)
+        )
+        self.handled_buffer = list(set(self.handled_buffer) ^ set(sorted_logs))
+        return map(self.target.format, sorted_logs)
+
+    def emit(self, record: logging.LogRecord):
+        """Логирует"""
+        if len(self.buffer + self.handled_buffer) >= self.capacity:
+            if self.handled_buffer:
+                del self.handled_buffer[0]
+            else:
+                del self.buffer[0]
+
+        self.buffer.append(record)
+        if record.levelno >= self.lvl >= 0:
+            self.acquire()
+            try:
+                try:
+                    level = logger.level(record.levelname).name
+                except ValueError:
+                    level = record.levelno
+
+                frame, depth = logging.currentframe(), 2
+                while frame.f_code.co_filename == logging.__file__:
+                    frame = frame.f_back
+                    depth += 1
+
+                logger.opt(depth=depth, exception=record.exc_info).log(
+                    level, record.getMessage())
+
+                self.handled_buffer = self.handled_buffer[-(self.capacity - len(self.buffer)):] + self.buffer
+                self.buffer = []
+            finally:
+                self.release()
+
+
+def setup_logger(level: str = "INFO", ignored: List[str] = []):
+    """Установка логирования"""
+    level = logging.getLevelName(level)
+
+    handler_ = MemoryHandler(StreamHandler(), level)
+    logging.basicConfig(handlers=[handler_], level=level)
+    
     for ignore in ignored:
         logger.disable(ignore)

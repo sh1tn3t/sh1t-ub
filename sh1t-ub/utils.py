@@ -17,12 +17,11 @@
 import asyncio
 import functools
 
-from pyrogram.types import Message
+from pyrogram.types import Message, User, Chat
 from pyrogram.file_id import FileId, PHOTO_TYPES
-from pyrogram.mime_types import mime_types
 
-from io import StringIO
-from mimetypes import MimeTypes
+from types import FunctionType
+
 from typing import Any, List, Literal, Tuple, Union
 
 
@@ -44,10 +43,10 @@ def get_full_command(message: Message) -> Union[
         message.text and message.text[0] in prefixes
         and len(message.text) > 1
     ):
-        return "", ""
+        return "", "", ""
 
     command, *args = message.text[1:].split(maxsplit=1)
-    return command.lower(), args[-1] if args else ""
+    return prefixes[0], command.lower(), args[-1] if args else ""
 
 
 async def answer(
@@ -58,7 +57,8 @@ async def answer(
     **kwargs
 ) -> List[Message]:
     """В основном это обычный message.edit, но:
-        - Если содержание сообщения будет больше лимита (4096 символов), то отправится несколько разделённых сообщений
+        - Если содержание сообщения будет больше лимита (4096 символов),
+            то отправится несколько разделённых сообщений
         - Работает message.reply, если команду вызвал не владелец аккаунта
 
     Параметры:
@@ -109,7 +109,7 @@ async def answer(
     return messages
 
 
-def run_sync(func, *args, **kwargs):
+def run_sync(func: FunctionType, *args, **kwargs):
     """Запускает асинхронно любую нон-асинк функцию
 
     Параметры:
@@ -134,7 +134,7 @@ def get_message_media(message: Union[Message, Any]):
     Параметры:
         message (``pyrogram.types.Message`` | ``typing.Any``):
             Сообщение
-    """    
+    """
     available_media = (
         "audio", "document", "photo", "sticker",
         "animation", "video", "voice", "video_note",
@@ -156,26 +156,42 @@ def get_message_media(message: Union[Message, Any]):
 
 def get_media_ext(message: Message):
     """Получить расширение файла
-    
+
     Параметры:
         message (``pyrogram.types.Message``):
             Сообщение
     """
-    mime_type = MimeTypes()
-    mime_type.readfp(StringIO(mime_types))
-
     if not message.media:
         raise ValueError("В сообщении нет медиа")
 
     media = get_message_media(message)
     media_mime_type = getattr(media, "mime_type", "")
-
-    extension = mime_type.guess_extension(media_mime_type)
-    file_type = FileId.decode(media.file_id).file_type
+    extension = message._client.mimetypes \
+        .guess_extension(media_mime_type)
 
     if not extension:
         extension = ".unknown"
+        file_type = FileId.decode(
+            media.file_id).file_type
+
         if file_type in PHOTO_TYPES:
             extension = ".jpg"
 
     return extension
+
+
+def get_display_name(entity: Union[User, Chat]):
+    """Получить отображаемое имя
+
+    Параметры:
+        entity (``pyrogram.types.User`` | ``pyrogram.types.Chat``):
+            Сущность, для которой нужно получить отображаемое имя
+    """
+    if isinstance(entity, User):
+        return entity.first_name + (
+            " " + entity.last_name
+            if entity.last_name else ""
+        )
+
+    elif isinstance(entity, Chat):
+        return entity.title

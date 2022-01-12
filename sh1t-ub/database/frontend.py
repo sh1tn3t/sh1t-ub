@@ -15,33 +15,33 @@
 #    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from lightdb import LightDB
-from pyrogram import types
+from pyrogram import Client, types
 
-from typing import Union
+from typing import Union, KT, VT
 from . import CloudDatabase
 
 
 class Database(LightDB):
     """Локальная база данных в файле"""
 
-    def __init__(self, location: str, cloud: CloudDatabase):
+    def __init__(self, location: str, app: Client):
         super().__init__(location)
-        self.cloud = cloud
+        self.cloud = CloudDatabase(app)
 
     def __repr__(self):
         return object.__repr__(self)
 
-    def set(self, name, key, value):
+    def set(self, name: str, key: KT, value: VT):
         self.setdefault(name, {})[key] = value
         return self.save()
 
-    def get(self, name, key, default = None):
+    def get(self, name: str, key: KT, default: VT = None):
         try:
             return self[name][key]
         except KeyError:
             return default
 
-    def pop(self, name, key = None, default = None):
+    def pop(self, name: str, key: KT = None, default: VT = None):
         if not key:
             value = self.pop(name, default)
         else:

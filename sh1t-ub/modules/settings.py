@@ -16,16 +16,12 @@
 
 from pyrogram import Client, types
 
-from .. import loader, utils, database
+from .. import loader, utils
 
 
+@loader.module(name="Settings", author="sh1tn3t")
 class SettingsMod(loader.Module):
     """Настройки бота"""
-
-    strings = {"name": "Settings"}
-
-    async def init(self, db: database.Database):
-        self.db = db
 
     async def setprefix_cmd(self, app: Client, message: types.Message, args: str):
         """Изменить префикс, можно несколько штук"""
@@ -33,7 +29,7 @@ class SettingsMod(loader.Module):
             return await utils.answer(
                 message, "На какой префикс нужно изменить?")
 
-        self.db.set("sh1t-ub.loader", "prefixes", args)
+        self.db.set("sh1t-ub.loader", "prefixes", list({args}))
         prefixes = ", ".join(f"<code>{prefix}</code>" for prefix in args)
         return await utils.answer(
             message, f"Префикс был изменен на {prefixes}")

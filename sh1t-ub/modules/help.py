@@ -19,46 +19,46 @@ from pyrogram import Client, types
 from .. import loader, utils
 
 
+@loader.module(name="Help", author="sh1tn3t")
 class HelpMod(loader.Module):
     """Помощь по командам юзербота"""
-
-    strings = {"name": "Help"}
 
     async def help_cmd(self, app: Client, message: types.Message, args: str):
         """Список всех модулей"""
         if not args:
-            for module in self.all_modules.modules: 
-                commands = "<b>,</b> ".join(
-                    f"<code>{command}</code>" for command in module.commands)
-                msg = "\n".join(
-                    f"• <b>{module.strings['name']}</b> ➜ {commands}"
-                    for module in self.all_modules.modules
-                )
-            return await utils.answer(
-                message, f"Доступные команды SUB(sh1tn3t userbot):\n\n" + msg)
-
-        module = list(
-            filter(
-                lambda m: m.strings["name"].lower() == args.lower(
-                ), self.all_modules.modules
+            msg = "\n".join(
+                f"• <b>{module.name}</b> ➜ " + \
+                    "<b>,</b> ".join(
+                        f"<code>{command}</code>" for command in module.commands
+                    )
+                for module in self.all_modules.modules
             )
-        )
 
-        if not module:
+            return await utils.answer(
+                message, "Доступные команды SUB(sh1tn3t userbot):\n\n" + msg)
+
+        if not (module := self.all_modules.get_module(args)):
             return await utils.answer(
                 message, "Такого модуля нет")
 
-        module = module[0]
         msg = "\n".join(
             f"➜ <code>{command}</code>\n"
             f"    ╰ {module.commands[command].__doc__ or 'Нет описания для команды'}"
             for command in module.commands
         )
 
+        module_name = f"Модуль: <b>{module.name}</b>\n"
+        module_author = f"Автор: <b>{module.author}</b>\n" if module.author else ""
+        module_version = f"Версия: <b>{module.version}</b>\n" if module.version else ""
+        module_description = (
+            f"Описание:\n\n"
+            f"• {module.__doc__ or 'Нет описания для модуля'}\n"
+        )
+
         return await utils.answer(
-            message, f"Описание модуля <u>{module.strings['name']}</u>:\n\n"
-                     f"• {module.__doc__ or 'Нет описания для модуля'}\n"
-                     f"{msg}"
+            message, module_name + module_author \
+                + module_version + "\n" + module_description \
+                    + msg
         )
 
     async def source_cmd(self, app: Client, message: types.Message):
