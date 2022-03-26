@@ -1,5 +1,5 @@
 #    Sh1t-UB (telegram userbot by sh1tn3t)
-#    Copyright (C) 2021 Sh1tN3t
+#    Copyright (C) 2021-2022 Sh1tN3t
 
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -17,10 +17,10 @@
 import io
 import logging
 
-from pyrogram import Client, types
 from datetime import datetime
+from pyrogram import Client, types
 
-from .. import loader, utils
+from .. import loader, utils, logger
 
 
 @loader.module(name="Tester", author="sh1tn3t")
@@ -55,14 +55,9 @@ class TesterMod(loader.Module):
         """Логи"""
         lvl = 40  # ERROR
 
-        if args:
-            lvl = (
-                int(args) if args.isdigit()
-                else getattr(logging, args.upper(), None)
-            )
-            if not isinstance(lvl, int):
-                return await utils.answer(
-                    message, "Неверный уровень логов")
+        if args and not (lvl := logger.get_valid_level(args)):
+            return await utils.answer(
+                message, "Неверный уровень логов")
 
         handler = logging.getLogger().handlers[0]
         logs = ("\n".join(handler.dumps(lvl))).encode("utf-8")

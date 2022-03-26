@@ -1,5 +1,5 @@
 #    Sh1t-UB (telegram userbot by sh1tn3t)
-#    Copyright (C) 2021 Sh1tN3t
+#    Copyright (C) 2021-2022 Sh1tN3t
 
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -82,7 +82,7 @@ class Dispatcher:
                 continue
 
             coro = handler.filters(app, message)
-            if inspect.iscoroutine(coro):
+            if inspect.iscoroutine(coro) or inspect.isawaitable(coro):
                 coro = await coro
 
             if not coro:
@@ -90,7 +90,7 @@ class Dispatcher:
 
             try:
                 handler = handler.callback(app, message)
-                if inspect.iscoroutine(handler):
+                if inspect.iscoroutine(handler) or inspect.isawaitable(coro):
                     await handler
             except Exception as error:
                 logging.exception(error)
@@ -102,9 +102,9 @@ async def check_filters(func, app: Client, message: types.Message):
     """Проверка фильтров"""
     if (filters := getattr(func, "filters", None)):
         coro = filters(app, message)
-        if inspect.iscoroutine(coro):
+        if inspect.iscoroutine(coro) or inspect.isawaitable(coro):
             coro = await coro
-        
+
         if not coro:
             return False
     else:

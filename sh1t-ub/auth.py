@@ -1,5 +1,20 @@
+#    Sh1t-UB (telegram userbot by sh1tn3t)
+#    Copyright (C) 2021-2022 Sh1tN3t
+
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 import sys
-import asyncio
 
 import logging
 import configparser
@@ -13,6 +28,7 @@ from . import __version__
 
 
 def colored_input(prompt: str = "", hide: bool = False):
+    """Цветной инпут"""
     frame = sys._getframe(1)
     return (input if not hide else getpass)(
         "\x1b[32m{time:%Y-%m-%d %H:%M:%S}\x1b[0m | "
@@ -27,11 +43,11 @@ def colored_input(prompt: str = "", hide: bool = False):
 class Auth:
     """Авторизация в аккаунт"""
 
-    def __init__(self, session_name: str = "../sh1t-ub"):  # ".." чтобы не сессия была вне папки sh1t-ub/sh1t-ub
+    def __init__(self, session_name: str = "../sh1t-ub"):
         self.check_api_tokens()
         self.app = Client(
-            session_name, config_file="./config.ini",
-            app_version=f"Sh1t-UB v{__version__}"
+            session_name=session_name, config_file="./config.ini",
+            parse_mode="html", app_version=f"Sh1t-UB v{__version__}"
         )
 
     def check_api_tokens(self):
@@ -40,14 +56,13 @@ class Auth:
         if not config.read("./config.ini"):
             config["pyrogram"] = {
                 "api_id": colored_input("Введи API ID: "),
-                "api_hash": colored_input("Введи API hash: "),
+                "api_hash": colored_input("Введи API hash: ")
             }
-        
+
             with open("./config.ini", "w") as file:
                 config.write(file)
 
-        pyro_config = config["pyrogram"]
-        return pyro_config["api_id"], pyro_config["api_hash"]
+        return True
 
     async def send_code(self):
         """Отправить код подтверждения"""
@@ -89,6 +104,6 @@ class Auth:
         except errors.SessionRevoked:
             logging.error("Сессия была сброшена, введи rm sh1t-ub.session и заново введи команду запуска")
             await self.app.disconnect()
-            return sys.exit(0)
+            return sys.exit(64)
 
         return self.app

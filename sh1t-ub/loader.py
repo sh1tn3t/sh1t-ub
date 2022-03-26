@@ -1,5 +1,5 @@
 #    Sh1t-UB (telegram userbot by sh1tn3t)
-#    Copyright (C) 2021 Sh1tN3t
+#    Copyright (C) 2021-2022 Sh1tN3t
 
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -84,7 +84,7 @@ class Modules:
 
         for module in self.db.get(__name__, "modules", []):
             try:
-                r  = await utils.run_sync(requests.get, module)
+                r = await utils.run_sync(requests.get, module)
                 await self.load_module(r.text, r.url)
             except requests.exceptions.ConnectionError as error:
                 logging.exception(
@@ -107,11 +107,6 @@ class Modules:
             value.db = self.db
             value.all_modules = self
 
-            for watcher in filter(
-                lambda attr: attr.startswith("watcher"), dir(value)
-            ):
-                self.watchers.append(getattr(value, watcher))
-
             for module in filter(
                 lambda module: module.__class__.__name__ == value.__name__, self.modules
             ):
@@ -119,6 +114,11 @@ class Modules:
 
             instance = value()
             instance.commands = get_commands(instance)
+
+            for watcher in filter(
+                lambda attr: attr.startswith("watcher"), dir(instance)
+            ):
+                self.watchers.append(getattr(instance, watcher))
 
             self.commands.update(instance.commands)
             self.modules.append(instance)

@@ -1,5 +1,5 @@
 #    Sh1t-UB (telegram userbot by sh1tn3t)
-#    Copyright (C) 2021 Sh1tN3t
+#    Copyright (C) 2021-2022 Sh1tN3t
 
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -35,7 +35,7 @@ class LoaderMod(loader.Module):
         """Загрузить модуль по ссылке"""
         if not args:
             return await utils.answer(
-                message, f"Нет ссылки на модуль")
+                message, "Нет ссылки на модуль")
 
         try:
             r = await utils.run_sync(requests.get, args)
@@ -97,6 +97,8 @@ class LoaderMod(loader.Module):
 
     async def update_cmd(self, app: Client, message: types.Message):
         """Обновление юзербота"""
+        await message.edit("Обновление...")
+
         repo = Repo(".")
         origin = repo.remote("origin")
         origin.pull()

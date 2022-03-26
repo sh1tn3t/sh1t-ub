@@ -1,5 +1,5 @@
 #    Sh1t-UB (telegram userbot by sh1tn3t)
-#    Copyright (C) 2021 Sh1tN3t
+#    Copyright (C) 2021-2022 Sh1tN3t
 
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -15,7 +15,6 @@
 #    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from pyrogram import Client, types
-
 from .. import loader, utils
 
 
@@ -51,7 +50,7 @@ class HelpMod(loader.Module):
         module_author = f"Автор: <b>{module.author}</b>\n" if module.author else ""
         module_version = f"Версия: <b>{module.version}</b>\n" if module.version else ""
         module_description = (
-            f"Описание:\n\n"
+            f"Описание:\n"
             f"• {module.__doc__ or 'Нет описания для модуля'}\n"
         )
 

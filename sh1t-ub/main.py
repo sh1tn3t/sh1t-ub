@@ -1,5 +1,5 @@
 #    Sh1t-UB (telegram userbot by sh1tn3t)
-#    Copyright (C) 2021 Sh1tN3t
+#    Copyright (C) 2021-2022 Sh1tN3t
 
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -28,6 +28,7 @@ db: database.Database = None
 
 
 async def main():
+    """Основной цикл юзербота"""
     app = await auth.Auth().authorize()
     await app.initialize()
 

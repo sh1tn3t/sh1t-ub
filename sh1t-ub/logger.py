@@ -1,5 +1,5 @@
 #    Sh1t-UB (telegram userbot by sh1tn3t)
-#    Copyright (C) 2021 Sh1tN3t
+#    Copyright (C) 2021-2022 Sh1tN3t
 
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -16,7 +16,7 @@
 
 import logging
 
-from typing import List
+from typing import Union
 from datetime import datetime
 
 from loguru._better_exceptions import ExceptionFormatter
@@ -29,12 +29,20 @@ FORMAT_FOR_FILES = (
     "{name}:{function}:{line} - {message}"
 )
 
+def get_valid_level(level: Union[str, int]):
+    lvl = (
+        int(level) if level.isdigit()
+        else getattr(logging, level.upper(), None)
+   )
+    if isinstance(lvl, int):
+        return lvl
+
 
 class StreamHandler(logging.Handler):
     """Обработчик логирования в поток"""
 
-    def __init__(self):
-        super().__init__(20)
+    def __init__(self, lvl: int = logging.INFO):
+        super().__init__(lvl)
 
     def format(self, record: logging.LogRecord):
         """Форматирует логи под нужный формат"""
@@ -63,9 +71,9 @@ class StreamHandler(logging.Handler):
 class MemoryHandler(logging.Handler):
     """Обработчик логирования в память"""
 
-    def __init__(self, target: logging.Handler, lvl: int = logging.INFO):
+    def __init__(self, lvl: int = logging.INFO):
         super().__init__(0)
-        self.target = target
+        self.target = StreamHandler(lvl)
         self.lvl = lvl
 
         self.capacity = 500
@@ -112,12 +120,15 @@ class MemoryHandler(logging.Handler):
                 self.release()
 
 
-def setup_logger(level: str = "INFO", ignored: List[str] = []):
+def setup_logger(level: Union[str, int]):
     """Установка логирования"""
-    level = logging.getLevelName(level)
+    level = get_valid_level(level) or 20
+    handler = MemoryHandler(level)
+    logging.basicConfig(handlers=[handler], level=level)
 
-    handler_ = MemoryHandler(StreamHandler(), level)
-    logging.basicConfig(handlers=[handler_], level=level)
-    
-    for ignore in ignored:
+    for ignore in [
+        "pyrogram.session",
+        "pyrogram.connection",
+        "pyrogram.methods.utilities.idle"
+    ]:
         logger.disable(ignore)

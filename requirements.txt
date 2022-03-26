@@ -3,3 +3,5 @@ tgcrypto
 loguru
 lightdb==1.1.1
 gitpython
+meval
+requests

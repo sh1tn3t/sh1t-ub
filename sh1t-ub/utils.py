@@ -1,5 +1,5 @@
 #    Sh1t-UB (telegram userbot by sh1tn3t)
-#    Copyright (C) 2021 Sh1tN3t
+#    Copyright (C) 2021-2022 Sh1tN3t
 
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -21,7 +21,6 @@ from pyrogram.types import Message, User, Chat
 from pyrogram.file_id import FileId, PHOTO_TYPES
 
 from types import FunctionType
-
 from typing import Any, List, Literal, Tuple, Union
 
 
@@ -50,7 +49,7 @@ def get_full_command(message: Message) -> Union[
 
 
 async def answer(
-    message: Message,
+    message: Union[Message, List[Message]],
     response: Union[str, Any],
     doc: bool = False,
     photo: bool = False,
@@ -62,7 +61,7 @@ async def answer(
         - Работает message.reply, если команду вызвал не владелец аккаунта
 
     Параметры:
-        message (``pyrogram.types.Message``):
+        message (``pyrogram.types.Message`` | ``typing.List[pyrogram.types.Message]``):
             Сообщение
 
         response (``str`` | ``typing.Any``):
@@ -113,7 +112,7 @@ def run_sync(func: FunctionType, *args, **kwargs):
     """Запускает асинхронно любую нон-асинк функцию
 
     Параметры:
-        func (``typing.Any``):
+        func (``types.FunctionType``):
             Функция для запуска
 
         args (``str``):
@@ -128,30 +127,14 @@ def run_sync(func: FunctionType, *args, **kwargs):
     )
 
 
-def get_message_media(message: Union[Message, Any]):
+def get_message_media(message: Message):
     """Получить медиа с сообщения, если есть
 
     Параметры:
-        message (``pyrogram.types.Message`` | ``typing.Any``):
+        message (``pyrogram.types.Message``):
             Сообщение
     """
-    available_media = (
-        "audio", "document", "photo", "sticker",
-        "animation", "video", "voice", "video_note",
-        "new_chat_photo", "web_page"
-    )
-
-    if isinstance(message, Message):
-        for kind in available_media:
-            media = getattr(message, kind, None)
-            if media:
-                break
-        else:
-            return None
-    else:
-        media = message
-
-    return media
+    return getattr(message, message.media or "", None)
 
 
 def get_media_ext(message: Message):

@@ -1,5 +1,5 @@
 #    Sh1t-UB (telegram userbot by sh1tn3t)
-#    Copyright (C) 2021 Sh1tN3t
+#    Copyright (C) 2021-2022 Sh1tN3t
 
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -17,10 +17,11 @@
 from pyrogram import Client, types
 
 from asyncio import sleep
-from .. import loader, utils, database
+from .. import loader, utils  # ".." - т.к. модули находятся в папке sh1t-ub/modules, то нам нужно на уровень выше
+                              # loader, modules - файлы из папки sh1t-ub
 
 
-@loader.module(name="Example", author="sh1tn3t", version=1)  # name модуля ("name" обязательный аргумент, остальное - нет), author - автор, version - версия
+@loader.module(name="Example", author="sh1tn3t", version=1)  # name модуля ("name" обязательный аргумент, остальное — нет), author - автор, version - версия
 class ExampleMod(loader.Module):  # Example - название класса модуля
                                   # Mod в конце названия обязательно
     """Описание модуля"""
@@ -38,7 +39,7 @@ class ExampleMod(loader.Module):  # Example - название класса мо
             )
         )
 
-        await sleep(2.5)
+        await sleep(2.5)  # никогда не используй time.sleep, потому что это не асинхронная функция, она остановит весь юзербот
         return await utils.answer(
             message, "Прошло 2.5 секунды!")
 
@@ -51,6 +52,7 @@ class ExampleMod(loader.Module):  # Example - название класса мо
     async def watcher(self, app: Client, message: types.Message):  # watcher - функция которая работает при получении нового сообщения
         return await message.reply("Привет, все работает отлично")
 
+    # Можно добавлять несколько вотчеров, главное чтобы функция начиналась на "watcher" 
     async def watcher_(self, app: Client, message: types.Message):
         if message.text == "Привет, это проверка второго вотчера щит-юб":
             return await message.reply("И тебе привет!")

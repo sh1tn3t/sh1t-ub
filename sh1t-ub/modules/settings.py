@@ -1,5 +1,5 @@
 #    Sh1t-UB (telegram userbot by sh1tn3t)
-#    Copyright (C) 2021 Sh1tN3t
+#    Copyright (C) 2021-2022 Sh1tN3t
 
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -15,7 +15,6 @@
 #    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from pyrogram import Client, types
-
 from .. import loader, utils
 
 
@@ -46,7 +45,7 @@ class SettingsMod(loader.Module):
                          "Правильно: addalias <новый алиас> <команда>"
             )
 
-        aliases = self.db.get("sh1t-ub.loader", "aliases", {})
+        aliases = self.all_modules.aliases
         if args[0] in aliases:
             return await utils.answer(
                 message, "Такой алиас уже существует")
@@ -67,7 +66,7 @@ class SettingsMod(loader.Module):
             return await utils.answer(
                 message, "Какой алиас нужно удалить?")
 
-        aliases = self.db.get("sh1t-ub.loader", "aliases", {})
+        aliases = self.all_modules.aliases
         if args not in aliases:
             return await utils.answer(
                 message, "Такого алиаса нет")
@@ -80,7 +79,7 @@ class SettingsMod(loader.Module):
 
     async def aliases_cmd(self, app: Client, message: types.Message):
         """Показать все алиасы"""
-        aliases = self.db.get("sh1t-ub.loader", "aliases", {})
+        aliases = self.all_modules.aliases
         if not aliases:
             return await utils.answer(
                 message, "Алиасов нет")
