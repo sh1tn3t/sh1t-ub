@@ -53,7 +53,7 @@ class ExampleMod(loader.Module):  # Example - название класса мо
         return await message.reply(
             "Привет, все работает отлично")
 
-    # Можно добавлять несколько вотчеров, главное чтобы функция начиналась с "watcher" 
+    # Можно добавлять несколько вотчеров, главное чтобы функция начиналась с "watcher"
     async def watcher_(self, app: Client, message: types.Message):
         if message.text == "Привет, это проверка второго вотчера щит-юб":
             return await message.reply(

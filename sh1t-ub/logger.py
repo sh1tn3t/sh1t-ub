@@ -29,6 +29,7 @@ FORMAT_FOR_FILES = (
     "{name}:{function}:{line} - {message}"
 )
 
+
 def get_valid_level(level: Union[str, int]):
     lvl = (
         int(level) if level.isdigit()
