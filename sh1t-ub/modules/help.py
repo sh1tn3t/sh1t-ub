@@ -15,7 +15,7 @@
 #    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from pyrogram import Client, types
-from .. import loader, utils
+from .. import loader, utils, __version__
 
 
 @loader.module(name="Help", author="sh1tn3t")
@@ -65,7 +65,7 @@ class HelpMod(loader.Module):
         sh1tn3t_link = "https://github.com/sh1tn3t"
 
         return await utils.answer(
-            message, f"Крутой юзербот sh1t-ub (sh1tn3t userbot)\n"
+            message, f"Крутой юзербот sh1t-ub (sh1tn3t userbot). Версия: {__version__}\n"
                      f"Авторы: @sh1tn3t, <a href=\"{sh1tn3t_link}\">github</a>\n\n"
                      f"Смотри исходный код тут:\n{sh1tn3t_link}/sh1t-ub"
         )

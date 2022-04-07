@@ -14,9 +14,9 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from pyrogram import Client, types
-
 from asyncio import sleep
+
+from pyrogram import Client, types
 from .. import loader, utils  # ".." - т.к. модули находятся в папке sh1t-ub/modules, то нам нужно на уровень выше
                               # loader, modules - файлы из папки sh1t-ub
 
@@ -32,7 +32,7 @@ class ExampleMod(loader.Module):  # Example - название класса мо
     async def example_cmd(self, app: Client, message: types.Message, args: str):  # _cmd на конце функции чтобы обозначить что это команда
                                                                                   # args - аргументы после команды. необязательный аргумент
         """Описание команды"""
-        await utils.answer( # utils.answer - это круто
+        await utils.answer(  # utils.answer - это круто
             message, "Ого пример команды" + (
                 f"\nАргументы: {args}" if args
                 else ""
@@ -43,16 +43,18 @@ class ExampleMod(loader.Module):  # Example - название класса мо
         return await utils.answer(
             message, "Прошло 2.5 секунды!")
 
-    @loader.on(lambda _, __, m: m and m.text and "тест" in m.text)  # Сработает только если есть "тест" в тексте с командой
+    @loader.on(lambda _, __, m: m and m.text and "тест" in m.text)  # Сработает только если есть "тест" в сообщении с командой
     async def example2_cmd(self, app: Client, message: types.Message):
         """Описание для второй команды с фильтрами"""
         return await utils.answer(message, f"Да, {self.test_attribute = }")
 
     @loader.on(lambda _, __, m: m and m.text == "Привет, это проверка вотчера щит-юб")
     async def watcher(self, app: Client, message: types.Message):  # watcher - функция которая работает при получении нового сообщения
-        return await message.reply("Привет, все работает отлично")
+        return await message.reply(
+            "Привет, все работает отлично")
 
-    # Можно добавлять несколько вотчеров, главное чтобы функция начиналась на "watcher" 
+    # Можно добавлять несколько вотчеров, главное чтобы функция начиналась с "watcher" 
     async def watcher_(self, app: Client, message: types.Message):
         if message.text == "Привет, это проверка второго вотчера щит-юб":
-            return await message.reply("И тебе привет!")
+            return await message.reply(
+                "И тебе привет!")

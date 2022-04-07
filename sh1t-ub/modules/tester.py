@@ -52,7 +52,7 @@ class TesterMod(loader.Module):
         return
 
     async def logs_cmd(self, app: Client, message: types.Message, args: str):
-        """Логи"""
+        """Отправляет логи. Использование: logs <уровень>"""
         lvl = 40  # ERROR
 
         if args and not (lvl := logger.get_valid_level(args)):

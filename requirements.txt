@@ -1,7 +1,7 @@
 pyrogram
 tgcrypto
 loguru
-lightdb==1.1.1
+lightdb
 gitpython
 meval
 requests

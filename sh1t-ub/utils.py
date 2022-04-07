@@ -38,13 +38,17 @@ def get_full_command(message: Message) -> Union[
     message.text = str(message.text or message.caption)
     prefixes = db.get("sh1t-ub.loader", "prefixes", ["-"])
 
-    if not (
-        message.text and message.text[0] in prefixes
-        and len(message.text) > 1
-    ):
+    for prefix in prefixes:
+        if (
+            message.text
+            and len(message.text) > len(prefix)
+            and message.text.startswith(prefix)
+        ):
+            break
+    else:
         return "", "", ""
 
-    command, *args = message.text[1:].split(maxsplit=1)
+    command, *args = message.text[len(prefix):].split(maxsplit=1)
     return prefixes[0], command.lower(), args[-1] if args else ""
 
 
@@ -68,7 +72,7 @@ async def answer(
             Текст или объект которое нужно отправить
 
         doc/photo (``bool``, *optional*):
-            Если ``True``, сообщение будет отправлено как документ или по ссылке
+            Если ``True``, сообщение будет отправлено как документ/фото или по ссылке
 
         kwargs (``dict``, *optional*):
             Параметры отправки сообщения
@@ -78,7 +82,7 @@ async def answer(
     if isinstance(message, list):
         message = message[0]
 
-    if isinstance(response, str) and all(not el for el in [doc, photo]):
+    if isinstance(response, str) and all(not arg for arg in [doc, photo]):
         outputs = [
             response[i: i + 4096]
             for i in range(0, len(response), 4096)

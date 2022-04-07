@@ -14,8 +14,9 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import inspect
 import logging
+
+from inspect import getfullargspec, iscoroutine
 
 from pyrogram import Client, types
 from . import loader, utils
@@ -46,7 +47,7 @@ class Dispatcher:
 
         try:
             if (
-                len(vars_ := inspect.getfullargspec(func).args) > 3
+                len(vars_ := getfullargspec(func).args) > 3
                 and vars_[3] == "args"
             ):
                 await func(app, message, utils.get_full_command(message)[2])
@@ -82,7 +83,7 @@ class Dispatcher:
                 continue
 
             coro = handler.filters(app, message)
-            if inspect.iscoroutine(coro) or inspect.isawaitable(coro):
+            if iscoroutine(coro):
                 coro = await coro
 
             if not coro:
@@ -90,7 +91,7 @@ class Dispatcher:
 
             try:
                 handler = handler.callback(app, message)
-                if inspect.iscoroutine(handler) or inspect.isawaitable(coro):
+                if iscoroutine(handler):
                     await handler
             except Exception as error:
                 logging.exception(error)
@@ -102,7 +103,7 @@ async def check_filters(func, app: Client, message: types.Message):
     """Проверка фильтров"""
     if (filters := getattr(func, "filters", None)):
         coro = filters(app, message)
-        if inspect.iscoroutine(coro) or inspect.isawaitable(coro):
+        if iscoroutine(coro):
             coro = await coro
 
         if not coro:

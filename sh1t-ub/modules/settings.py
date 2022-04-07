@@ -23,12 +23,12 @@ class SettingsMod(loader.Module):
     """Настройки бота"""
 
     async def setprefix_cmd(self, app: Client, message: types.Message, args: str):
-        """Изменить префикс, можно несколько штук"""
-        if not (args := list(args)):
+        """Изменить префикс, можно несколько штук разделённые пробелом. Использование: setprefix <префикс> [префикс, ...]"""
+        if not (args := args.split()):
             return await utils.answer(
                 message, "На какой префикс нужно изменить?")
 
-        self.db.set("sh1t-ub.loader", "prefixes", list({args}))
+        self.db.set("sh1t-ub.loader", "prefixes", list({*args}))
         prefixes = ", ".join(f"<code>{prefix}</code>" for prefix in args)
         return await utils.answer(
             message, f"Префикс был изменен на {prefixes}")

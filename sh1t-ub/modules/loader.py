@@ -32,7 +32,7 @@ class LoaderMod(loader.Module):
     """Загрузчик модулей"""
 
     async def dlmod_cmd(self, app: Client, message: types.Message, args: str):
-        """Загрузить модуль по ссылке"""
+        """Загрузить модуль по ссылке. Использование: dlmod <ссылка>"""
         if not args:
             return await utils.answer(
                 message, "Нет ссылки на модуль")
@@ -52,10 +52,10 @@ class LoaderMod(loader.Module):
             message, f"Модуль \"{module_name}\" загружен")
 
     async def loadmod_cmd(self, app: Client, message: types.Message):
-        """Загрузить модуль по файлу"""
+        """Загрузить модуль по файлу. Использование: <реплай на файл>"""
         if not (file := message if message.document else message.reply_to_message):
             return await utils.answer(
-                message, "Не указан путь до файла или нет реплая на файл")
+                message, "Нет реплая на файл")
 
         temp_file = tempfile.NamedTemporaryFile("w")
         await file.download(temp_file.name)
@@ -75,7 +75,7 @@ class LoaderMod(loader.Module):
             message, f"Модуль \"{module_name}\" загружен")
 
     async def unloadmod_cmd(self, app: Client, message: types.Message, args: str):
-        """Выгрузить модуль"""
+        """Выгрузить модуль. Использование: unloadmod <название модуля>"""
         if not (module_name := await self.all_modules.unload_module(args)):
             return await utils.answer(
                 message, "Неверное название модуля")

@@ -51,7 +51,7 @@ class Auth:
         )
 
     def check_api_tokens(self):
-        """Проверят установлены ли токен, если нет, то начинает установку"""
+        """Проверит установлены ли токены, если нет, то начинает установку"""
         config = configparser.ConfigParser()
         if not config.read("./config.ini"):
             config["pyrogram"] = {
