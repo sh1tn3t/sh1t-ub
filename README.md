@@ -8,10 +8,24 @@
     <a href="https://t.me/sh1tubchat">Чат поддержки</a>
 </p>
 
+<a href="https://github.com/sh1tn3t/sh1t-ub/stargazers">
+    <img src="https://badgen.net/github/stars/sh1tn3t/sh1t-ub" alt="stars">
+</a>
+<a href="https://github.com/sh1tn3t/sh1t-ub/watchers">
+    <img src="https://badgen.net/github/watchers/sh1tn3t/sh1t-ub" alt="watchers">
+</a>
+<a href="https://github.com/sh1tn3t/sh1t-ub/commits/main">
+    <img src="https://badgen.net/github/commits/sh1tn3t/sh1t-ub/main" alt="commits">
+</a>
+<br>
+<a href="https://www.codefactor.io/repository/github/sh1tn3t/sh1t-ub">
+    <img src="https://www.codefactor.io/repository/github/sh1tn3t/sh1t-ub/badge" alt="CodeFactor"/>
+</a>
+
 
 <h1>Описание</h1>
 
-sh1tub — это ваш интерактивный многофункциональный помощник в Телеграме  
+sh1t-ub — это ваш интерактивный многофункциональный помощник в Телеграме  
 Многофункциональный и расширяемый юзербот позволит создавать любые модули, нужна лишь фантазия
 
 Подключение к аккаунту происходит посредством создании новой (!) сессии
