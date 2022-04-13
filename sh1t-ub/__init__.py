@@ -1,8 +1,30 @@
+#    Sh1t-UB (telegram userbot by sh1tn3t)
+#    Copyright (C) 2021-2022 Sh1tN3t
+
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 __authors__ = "Sh1tN3t - @sh1tn3t"
-__version__ = "1.0.1"
+__version__ = "1.1"
 
 change_log = """
 Буду сюда писать по поводу изменений.
+
+
+Новая версия 0.1b:
+
+добавлена основная структура юзербота
+
 
 Новая версия 0.2b (все еще бетка, релиз когда нибудь):
 
@@ -84,7 +106,17 @@ example модуль обновлен
 убрана лишняя проверка в диспетчере
 теперь можно ставить префикс на несколько символов, подробнее: help Settings
 
+
 Новая версия 1.0.1:
 
 рефактор кода pep8
+
+
+Новая версия 1.1:
+
+рефактор код pep8
+добавлена лицензия во все файлы
+посмотреть инфу о чате с данными можно через db.cloud.data_chat
+изменено оформление модулей
+в utils.answer теперь можно указывать в какой чат будет отправлено сообщение: chat_id (str | int)
 """

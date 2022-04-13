@@ -14,17 +14,20 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import sys
-
 import logging
+
+import sys
 import configparser
 
 from datetime import datetime
-
 from getpass import getpass
+
 from pyrogram import Client, errors
+from pyrogram.session.session import Session
 
 from . import __version__
+
+Session.notice_displayed = True
 
 
 def colored_input(prompt: str = "", hide: bool = False):
@@ -91,7 +94,7 @@ class Auth:
                 logging.error("Неверный пароль, попробуй снова")
 
     async def authorize(self):
-        """Авторизирует в аккаунт"""
+        """Процесс авторизации в аккаунт"""
         await self.app.connect()
 
         try:

@@ -23,9 +23,11 @@ from pyrogram.file_id import FileId, PHOTO_TYPES
 from types import FunctionType
 from typing import Any, List, Literal, Tuple, Union
 
+from . import database
+
 
 def get_full_command(message: Message) -> Union[
-    Tuple[Literal[""], Literal[""]], Tuple[str, str]
+    Tuple[Literal[""], Literal[""], Literal[""]], Tuple[str, str, str]
 ]:
     """Вывести кортеж из команды и аргументов
 
@@ -33,10 +35,8 @@ def get_full_command(message: Message) -> Union[
         message (``pyrogram.types.Message``):
             Сообщение
     """
-    from .main import db
-
     message.text = str(message.text or message.caption)
-    prefixes = db.get("sh1t-ub.loader", "prefixes", ["-"])
+    prefixes = database.db.get("sh1t-ub.loader", "prefixes", ["-"])
 
     for prefix in prefixes:
         if (
@@ -53,6 +53,7 @@ def get_full_command(message: Message) -> Union[
 async def answer(
     message: Union[Message, List[Message]],
     response: Union[str, Any],
+    chat_id: Union[str, int] = None,
     doc: bool = False,
     photo: bool = False,
     **kwargs
@@ -69,13 +70,16 @@ async def answer(
         response (``str`` | ``typing.Any``):
             Текст или объект которое нужно отправить
 
+        chat_id (``str`` | ``int``):
+            Чат, в который нужно отправить сообщение
+
         doc/photo (``bool``, *optional*):
             Если ``True``, сообщение будет отправлено как документ/фото или по ссылке
 
         kwargs (``dict``, *optional*):
             Параметры отправки сообщения
     """
-    messages = []
+    messages: List[Message] = []
 
     if isinstance(message, list):
         message = message[0]
@@ -86,26 +90,45 @@ async def answer(
             for i in range(0, len(response), 4096)
         ]
 
-        messages.append(
-            await (
-                message.edit if message.outgoing
-                else message.reply
-            )(outputs[0], **kwargs)
-        )
+        if chat_id:
+            messages.append(
+                await message._client.send_message(
+                    chat_id, outputs[0], **kwargs)
+            )
+        else:
+            messages.append(
+                await (
+                    message.edit if message.outgoing
+                    else message.reply
+                )(outputs[0], **kwargs)
+            )
+
         for output in outputs[1:]:
             messages.append(
-                await message.reply(output, **kwargs)
+                await messages[0].reply(output, **kwargs)
             )
 
     elif doc:
-        messages.append(
-            await message.reply_document(response, **kwargs)
-        )
+        if chat_id:
+            messages.append(
+                await message._client.send_document(
+                    chat_id, response, **kwargs)
+            )
+        else:
+            messages.append(
+                await message.reply_document(response, **kwargs)
+            )
 
     elif photo:
-        messages.append(
-            await message.reply_photo(response, **kwargs)
-        )
+        if chat_id:
+            messages.append(
+                await message._client.send_photo(
+                    chat_id, response, **kwargs)
+            )
+        else:
+            messages.append(
+                await message.reply_photo(response, **kwargs)
+            )
 
     return messages
 
@@ -147,12 +170,11 @@ def get_media_ext(message: Message):
             Сообщение
     """
     if not message.media:
-        raise ValueError("В сообщении нет медиа")
+        return False
 
     media = get_message_media(message)
     media_mime_type = getattr(media, "mime_type", "")
-    extension = message._client.mimetypes \
-        .guess_extension(media_mime_type)
+    extension = message._client.mimetypes.guess_extension(media_mime_type)
 
     if not extension:
         extension = ".unknown"
@@ -172,11 +194,9 @@ def get_display_name(entity: Union[User, Chat]):
         entity (``pyrogram.types.User`` | ``pyrogram.types.Chat``):
             Сущность, для которой нужно получить отображаемое имя
     """
-    if isinstance(entity, User):
-        return entity.first_name + (
+    return getattr(entity, "title", None) or (
+        entity.first_name or "" + (
             " " + entity.last_name
             if entity.last_name else ""
         )
-
-    elif isinstance(entity, Chat):
-        return entity.title
+    )

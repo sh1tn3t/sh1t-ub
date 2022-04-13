@@ -24,8 +24,11 @@ from . import CloudDatabase
 class Database(LightDB):
     """Локальная база данных в файле"""
 
-    def __init__(self, location: str, app: Client):
+    def __init__(self, location: str):
         super().__init__(location)
+        self.cloud = None
+
+    def init_cloud(self, app: Client):
         self.cloud = CloudDatabase(app)
 
     def __repr__(self):

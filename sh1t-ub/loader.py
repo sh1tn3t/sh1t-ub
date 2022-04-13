@@ -100,28 +100,25 @@ class Modules:
         spec.loader.exec_module(module)
 
         instance = None
-        for _, value in filter(
-            lambda element: element[0].endswith("Mod") \
-                and issubclass(element[1], Module), vars(module).items()
-        ):
-            value.db = self.db
-            value.all_modules = self
+        for key, value in vars(module).items():
+            if key.endswith("Mod") and issubclass(value, Module):
+                value.db = self.db
+                value.all_modules = self
 
-            for module in filter(
-                lambda module: module.__class__.__name__ == value.__name__, self.modules
-            ):
-                self.modules.remove(module)
+                for module in self.modules:
+                    if module.__class__.__name__ == value.__name__:
+                        self.modules.remove(module)
 
-            instance = value()
-            instance.commands = get_commands(instance)
+                instance = value()
+                instance.commands = get_commands(instance)
 
-            for watcher in filter(
-                lambda attr: attr.startswith("watcher"), dir(instance)
-            ):
-                self.watchers.append(getattr(instance, watcher))
+                for watcher in filter(
+                    lambda attr: attr.startswith("watcher"), dir(instance)
+                ):
+                    self.watchers.append(getattr(instance, watcher))
 
-            self.commands.update(instance.commands)
-            self.modules.append(instance)
+                self.commands.update(instance.commands)
+                self.modules.append(instance)
 
         return instance
 
@@ -178,6 +175,8 @@ class Modules:
 
         elif by_commands_too and name in self.commands:
             return self.commands[name].__self__
+
+        return None
 
 
 class StringLoader(SourceLoader):

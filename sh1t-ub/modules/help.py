@@ -27,37 +27,40 @@ class HelpMod(loader.Module):
         if not args:
             msg = "\n".join(
                 f"• <b>{module.name}</b> ➜ " + \
-                    "<b>,</b> ".join(
+                    " <b>|</b> ".join(
                         f"<code>{command}</code>" for command in module.commands
                     )
                 for module in self.all_modules.modules
             )
-
             return await utils.answer(
-                message, "Доступные команды SUB(sh1tn3t userbot):\n\n" + msg)
+                message, f"🗄 Доступные модули Sh1tN3t-UserBot: <b>{len(self.all_modules.modules)}</b>\n\n"
+                         f"{msg}"
+            )
 
         if not (module := self.all_modules.get_module(args)):
             return await utils.answer(
-                message, "Такого модуля нет")
+                message, "❌ Такого модуля нет")
 
-        msg = "\n".join(
-            f"➜ <code>{command}</code>\n"
+        prefix = self.db.get("sh1t-ub.loader", "prefixes", ["-"])[0]
+        description = "\n".join(
+            f"👉 <code>{prefix + command}</code>\n"
             f"    ╰ {module.commands[command].__doc__ or 'Нет описания для команды'}"
             for command in module.commands
         )
 
-        module_name = f"Модуль: <b>{module.name}</b>\n"
-        module_author = f"Автор: <b>{module.author}</b>\n" if module.author else ""
-        module_version = f"Версия: <b>{module.version}</b>\n" if module.version else ""
-        module_description = (
-            f"Описание:\n"
-            f"• {module.__doc__ or 'Нет описания для модуля'}\n"
+        header = (
+            f"🖥 Модуль: <b>{module.name}</b>\n" + (
+                f"👨🏿‍💻 Автор: <b>{module.author}</b>\n" if module.author else ""
+            ) + (
+                f"🔢 Версия: <b>{module.version}</b>\n" if module.version else ""
+            ) + (
+                f"\n📄 Описание:\n"
+                f"    ╰ {module.__doc__ or 'Нет описания для модуля'}\n\n"
+            )
         )
 
         return await utils.answer(
-            message, module_name + module_author \
-                + module_version + "\n" + module_description \
-                    + msg
+            message, header + description
         )
 
     async def source_cmd(self, app: Client, message: types.Message):
@@ -65,7 +68,9 @@ class HelpMod(loader.Module):
         sh1tn3t_link = "https://github.com/sh1tn3t"
 
         return await utils.answer(
-            message, f"Крутой юзербот sh1t-ub (sh1tn3t userbot). Версия: {__version__}\n"
-                     f"Авторы: @sh1tn3t, <a href=\"{sh1tn3t_link}\">github</a>\n\n"
-                     f"Смотри исходный код тут:\n{sh1tn3t_link}/sh1t-ub"
+            message, (
+                f"😎 Керемет пайдаланушы роботы sh1t-ub. Нұсқасы: <b>{__version__}</b>\n"
+                f"Авторлары: @sh1tn3t, <a href=\"{sh1tn3t_link}\">github</a>\n\n"
+                f"Бастапқы кодты <a href=\"{sh1tn3t_link}/sh1t-ub\"><b>мына жерден</b></a> қараңыз"
+            ), disable_web_page_preview=True
         )

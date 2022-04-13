@@ -18,13 +18,9 @@ import logging
 
 from pyrogram import filters
 from pyrogram.handlers import MessageHandler
-from pyrogram.session.session import Session
 from pyrogram.methods.utilities.idle import idle
 
 from . import auth, database, loader, dispatcher
-
-Session.notice_displayed = True
-db: database.Database = None
 
 
 async def main():
@@ -32,9 +28,9 @@ async def main():
     app = await auth.Auth().authorize()
     await app.initialize()
 
-    global db
+    db = database.db
+    db.init_cloud(app)
 
-    db = database.Database("./db.json", app)
     modules = loader.Modules(db)
     dp = dispatcher.Dispatcher(modules)
 
@@ -48,15 +44,15 @@ async def main():
         if (
             not msg.empty
             and msg.text != (
-                restarted_text := "Перезагрузка прошла успешно!")
+                restarted_text := "✅ Перезагрузка прошла успешно!")
         ):
             await msg.edit(restarted_text)
 
         db.pop("sh1t-ub.loader", "restart_msg")
 
-    prefixes = db.get("sh1t-ub.loader", "prefixes", ["-"])
+    prefix = db.get("sh1t-ub.loader", "prefixes", ["-"])[0]
     logging.info(
-        f"Стартовал для [ID: {(await app.get_me()).id}] успешно, введи {prefixes[0]}help в чате для получения списка команд"
+        f"Стартовал для [ID: {(await app.get_me()).id}] успешно, введи {prefix}help в чате для получения списка команд"
     )
 
     await idle()

@@ -35,27 +35,36 @@ class LoaderMod(loader.Module):
         """Загрузить модуль по ссылке. Использование: dlmod <ссылка>"""
         if not args:
             return await utils.answer(
-                message, "Нет ссылки на модуль")
+                message, "❌ Нет ссылки на модуль")
 
         try:
             r = await utils.run_sync(requests.get, args)
             if not (module_name := await self.all_modules.load_module(r.text, r.url)):
                 return await utils.answer(
-                    message, "Не удалось загрузить модуль. Доп. информацию смотри в логах")
+                    message, "❌ Не удалось загрузить модуль. Подробности смотри в логах")
         except requests.exceptions.ConnectionError:
             return await utils.answer(
-                message, "Модуль недоступен по ссылке")
+                message, "❌ Модуль недоступен по ссылке")
 
         self.db.set("sh1t-ub.loader", "modules",
                     list({*self.db.get("sh1t-ub.loader", "modules", []) + [args]}))
         return await utils.answer(
-            message, f"Модуль \"{module_name}\" загружен")
+            message, f"✅ Модуль \"{module_name}\" загружен")
 
     async def loadmod_cmd(self, app: Client, message: types.Message):
         """Загрузить модуль по файлу. Использование: <реплай на файл>"""
-        if not (file := message if message.document else message.reply_to_message):
+        reply = message.reply_to_message
+        file = (
+            message
+            if message.document
+            else reply
+            if reply.document
+            else None
+        )
+
+        if not file:
             return await utils.answer(
-                message, "Нет реплая на файл")
+                message, "❌ Нет реплая на файл")
 
         temp_file = tempfile.NamedTemporaryFile("w")
         await file.download(temp_file.name)
@@ -63,25 +72,26 @@ class LoaderMod(loader.Module):
         try:
             module_source = open(temp_file.name, "r", encoding="utf-8").read()
         except UnicodeDecodeError:
+            temp_file.close()
             return await utils.answer(
-                message, "Неверная кодировка файла")
+                message, "❌ Неверная кодировка файла")
 
         if not (module_name := await self.all_modules.load_module(module_source)):
             return await utils.answer(
-                message, "Не удалось загрузить модуль. Доп. информацию смотри в логах")
+                message, "❌ Не удалось загрузить модуль. Подробности смотри в логах")
 
         temp_file.close()
         return await utils.answer(
-            message, f"Модуль \"{module_name}\" загружен")
+            message, f"✅ Модуль \"{module_name}\" загружен")
 
     async def unloadmod_cmd(self, app: Client, message: types.Message, args: str):
         """Выгрузить модуль. Использование: unloadmod <название модуля>"""
         if not (module_name := await self.all_modules.unload_module(args)):
             return await utils.answer(
-                message, "Неверное название модуля")
+                message, "❌ Неверное название модуля")
 
         return await utils.answer(
-            message, f"Модуль \"{module_name}\" выгружен")
+            message, f"✅ Модуль \"{module_name}\" выгружен")
 
     async def restart_cmd(self, app: Client, message: types.Message):
         """Перезагрузка юзербота"""
@@ -92,12 +102,12 @@ class LoaderMod(loader.Module):
                     f"{message.chat.id}:{message.message_id}")
         atexit.register(restart)
 
-        await utils.answer(message, "Перезагрузка...")
+        await utils.answer(message, "🔁 Перезагрузка...")
         return sys.exit(0)
 
     async def update_cmd(self, app: Client, message: types.Message):
         """Обновление юзербота"""
-        await message.edit("Обновление...")
+        await message.edit("🔃 Обновление...")
 
         repo = Repo(".")
         origin = repo.remote("origin")

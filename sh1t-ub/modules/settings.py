@@ -26,56 +26,56 @@ class SettingsMod(loader.Module):
         """Изменить префикс, можно несколько штук разделённые пробелом. Использование: setprefix <префикс> [префикс, ...]"""
         if not (args := args.split()):
             return await utils.answer(
-                message, "На какой префикс нужно изменить?")
+                message, "❔ На какой префикс нужно изменить?")
 
         self.db.set("sh1t-ub.loader", "prefixes", list({*args}))
         prefixes = ", ".join(f"<code>{prefix}</code>" for prefix in args)
         return await utils.answer(
-            message, f"Префикс был изменен на {prefixes}")
+            message, f"✅ Префикс был изменен на {prefixes}")
 
     async def addalias_cmd(self, app: Client, message: types.Message, args: str):
         """Добавить алиас. Использование: addalias <новый алиас> <команда>"""
         if not (args := args.lower().split(maxsplit=1)):
             return await utils.answer(
-                message, "Какой алиас нужно добавить?")
+                message, "❔ Какой алиас нужно добавить?")
 
         if len(args) != 2:
             return await utils.answer(
-                message, "Неверно указаны аргументы."
-                         "Правильно: addalias <новый алиас> <команда>"
+                message, "❌ Неверно указаны аргументы."
+                         "✅ Правильно: addalias <новый алиас> <команда>"
             )
 
         aliases = self.all_modules.aliases
         if args[0] in aliases:
             return await utils.answer(
-                message, "Такой алиас уже существует")
+                message, "❌ Такой алиас уже существует")
 
         if not self.all_modules.commands.get(args[1]):
             return await utils.answer(
-                message, "Такой команды нет")
+                message, "❌ Такой команды нет")
 
         aliases[args[0]] = args[1]
         self.db.set("sh1t-ub.loader", "aliases", aliases)
 
         return await utils.answer(
-            message, f"Алиас {args[0]} для команды {args[1]} был добавлен")
+            message, f"✅ Алиас <code>{args[0]}</code> для команды <code>{args[1]}</code> был добавлен")
 
     async def delalias_cmd(self, app: Client, message: types.Message, args: str):
         """Удалить алиас. Использование: delalias <алиас>"""
         if not (args := args.lower()):
             return await utils.answer(
-                message, "Какой алиас нужно удалить?")
+                message, "❔ Какой алиас нужно удалить?")
 
         aliases = self.all_modules.aliases
         if args not in aliases:
             return await utils.answer(
-                message, "Такого алиаса нет")
+                message, "❌ Такого алиаса нет")
 
         del aliases[args]
         self.db.set("sh1t-ub.loader", "aliases", aliases)
 
         return await utils.answer(
-            message, f"Алиас {args} был удален")
+            message, f"✅ Алиас <code>{args}</code> был удален")
 
     async def aliases_cmd(self, app: Client, message: types.Message):
         """Показать все алиасы"""
@@ -85,7 +85,7 @@ class SettingsMod(loader.Module):
                 message, "Алиасов нет")
 
         return await utils.answer(
-            message, "Список всех алиасов:\n" + "\n".join(
+            message, "🗄 Список всех алиасов:\n" + "\n".join(
                 f"• <code>{alias}</code> ➜ {command}"
                 for alias, command in aliases.items()
             )
