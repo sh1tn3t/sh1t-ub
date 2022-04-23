@@ -53,7 +53,7 @@ class EvaluatorMod(loader.Module):
                 message, f"<b>[{'eval' if return_it else 'exec'}] Не удалось выполнить выражение:</b>\n"
                          f"<code>{args}</code>\n\n"
                          f"<b>Ошибка:</b>\n"
-                         f"<code>{html.escape(traceback.format_exc(3, True))}</code>"
+                         f"<code>{html.escape(traceback.format_exc())}</code>"
             )
 
         if return_it:

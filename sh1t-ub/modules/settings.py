@@ -28,7 +28,7 @@ class SettingsMod(loader.Module):
             return await utils.answer(
                 message, "❔ На какой префикс нужно изменить?")
 
-        self.db.set("sh1t-ub.loader", "prefixes", list({*args}))
+        self.db.set("sh1t-ub.loader", "prefixes", list(set(args)))
         prefixes = ", ".join(f"<code>{prefix}</code>" for prefix in args)
         return await utils.answer(
             message, f"✅ Префикс был изменен на {prefixes}")

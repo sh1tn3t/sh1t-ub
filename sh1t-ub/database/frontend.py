@@ -29,6 +29,7 @@ class Database(LightDB):
         self.cloud = None
 
     def init_cloud(self, app: Client):
+        """Инициализация облачной базы данных"""
         self.cloud = CloudDatabase(app)
 
     def __repr__(self):

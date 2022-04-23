@@ -45,9 +45,11 @@ def get_full_command(message: Message) -> Union[
             and message.text.startswith(prefix)
         ):
             command, *args = message.text[len(prefix):].split(maxsplit=1)
-            return prefixes[0], command.lower(), args[-1] if args else ""
+            break
     else:
         return "", "", ""
+
+    return prefixes[0], command.lower(), args[-1] if args else ""
 
 
 async def answer(

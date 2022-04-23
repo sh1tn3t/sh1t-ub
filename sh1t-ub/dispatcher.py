@@ -56,7 +56,7 @@ class Dispatcher:
         except Exception as error:
             logging.exception(error)
             await utils.answer(
-                message, f"Произошла ошибка при выполнении команды.\n"
+                message, f"❌ Произошла ошибка при выполнении команды.\n"
                          f"Запрос был: <code>{message.text}</code>\n"
                          f"Подробности можно найти в <code>{prefix}logs</code>"
             )

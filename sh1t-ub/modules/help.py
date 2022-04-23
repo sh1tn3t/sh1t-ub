@@ -26,11 +26,11 @@ class HelpMod(loader.Module):
         """Список всех модулей"""
         if not args:
             msg = "\n".join(
-                f"• <b>{module.name}</b> ➜ " + \
+                f"• <b>{module.name}</b> ➜ " + (
                     " <b>|</b> ".join(
                         f"<code>{command}</code>" for command in module.commands
                     )
-                for module in self.all_modules.modules
+                ) for module in self.all_modules.modules
             )
             return await utils.answer(
                 message, f"🗄 Доступные модули Sh1tN3t-UserBot: <b>{len(self.all_modules.modules)}</b>\n\n"

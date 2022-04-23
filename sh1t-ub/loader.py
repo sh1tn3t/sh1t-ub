@@ -30,7 +30,7 @@ from importlib.machinery import ModuleSpec
 from importlib.util import spec_from_file_location, module_from_spec
 
 from typing import Union
-from pyrogram import filters as filters_
+from pyrogram import filters
 
 from . import utils, database
 
@@ -68,7 +68,7 @@ class Modules:
     async def register_all(self):
         """Регистрирует все модули"""
         for module in filter(
-            lambda file_name: file_name.endswith(".py") \
+            lambda file_name: file_name.endswith(".py")
                 and not file_name.startswith("_"), os.listdir(self.modules_path)
         ):
             module_name = f"sh1t-ub.modules.{module[:-3]}"
@@ -108,6 +108,10 @@ class Modules:
                 for module in self.modules:
                     if module.__class__.__name__ == value.__name__:
                         self.modules.remove(module)
+                        for watcher in filter(
+                            lambda attr: attr.startswith("watcher"), dir(module)
+                        ):
+                            self.watchers.remove(getattr(module, watcher))
 
                 instance = value()
                 instance.commands = get_commands(instance)
@@ -173,7 +177,7 @@ class Modules:
         ):
             return module[0]
 
-        elif by_commands_too and name in self.commands:
+        if by_commands_too and name in self.commands:
             return self.commands[name].__self__
 
         return None
@@ -213,13 +217,13 @@ def get_commands(module: Module):
     }
 
 
-def on(filters):
+def on(custom_filters):
     """Создает фильтр для команды"""
     def decorator(func):
         func.filters = (
-            filters_.create(filters)
-            if filters.__module__ != "pyrogram.filters"
-            else filters
+            filters.create(custom_filters)
+            if custom_filters.__module__ != "pyrogram.filters"
+            else custom_filters
         )
         return func
     return decorator

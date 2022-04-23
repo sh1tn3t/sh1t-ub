@@ -31,12 +31,10 @@ FORMAT_FOR_FILES = (
 
 
 def get_valid_level(level: Union[str, int]):
-    lvl = (
+    return (
         int(level) if level.isdigit()
         else getattr(logging, level.upper(), None)
-   )
-    if isinstance(lvl, int):
-        return lvl
+    )
 
 
 class StreamHandler(logging.Handler):

@@ -57,13 +57,13 @@ class TesterMod(loader.Module):
 
         if args and not (lvl := logger.get_valid_level(args)):
             return await utils.answer(
-                message, "Неверный уровень логов")
+                message, "❌ Неверный уровень логов")
 
         handler = logging.getLogger().handlers[0]
         logs = ("\n".join(handler.dumps(lvl))).encode("utf-8")
         if not logs:
             return await utils.answer(
-                message, f"Нет логов на уровне {lvl} ({logging.getLevelName(lvl)})")
+                message, f"❕ Нет логов на уровне {lvl} ({logging.getLevelName(lvl)})")
 
         logs = io.BytesIO(logs)
         logs.name = "sh1t-ub.log"
@@ -71,5 +71,5 @@ class TesterMod(loader.Module):
         await message.delete()
         return await utils.answer(
             message, logs, doc=True, quote=False,
-            caption=f"Sh1t-UB Логи с {lvl} ({logging.getLevelName(lvl)}) уровнем"
+            caption=f"📤 Sh1t-UB Логи с {lvl} ({logging.getLevelName(lvl)}) уровнем"
         )
