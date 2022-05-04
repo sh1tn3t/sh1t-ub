@@ -38,15 +38,18 @@ class ExampleMod(loader.Module):  # Example - название класса мо
     def __init__(self):
         self.test_attribute = "Это атрибут модуля"
 
-    async def example_inline_handler(self, inline_query: InlineQuery):  # _inline_handler на конце функции чтобы обозначить что это инлайн-команда
-                                                                        # args - аргументы после команды. необязательный аргумент
+    async def example_inline_handler(self, app: Client, inline_query: InlineQuery, args: str):  # _inline_handler на конце функции чтобы обозначить что это инлайн-команда
+                                                                                                # args - аргументы после команды. необязательный аргумент
         """Пример инлайн-команды"""
         await inline_query.answer(
             [
                 InlineQueryResultArticle(
                     id=inline.result_id(),
                     title="Тайтл",
-                    description="Нажми на меня!",
+                    description="Нажми на меня!" + (
+                        f" Аргументы: {args}" if args
+                        else ""
+                    ),
                     input_message_content=InputTextMessageContent(
                         "Текст после нажатия на кнопку"),
                     reply_markup=InlineKeyboardMarkup().add(
@@ -55,7 +58,7 @@ class ExampleMod(loader.Module):  # Example - название класса мо
             ]
         )
 
-    async def example_callback_handler(self, call: CallbackQuery): # _callback_handler на конце функции чтобы обозначить что это каллбек-хендлер
+    async def example_callback_handler(self, app: Client, call: CallbackQuery): # _callback_handler на конце функции чтобы обозначить что это каллбек-хендлер
         """Пример каллбека"""
         if call.data != "example_button_callback":  # Сработает только если каллбек дата равняется "example_button_callback"
             return

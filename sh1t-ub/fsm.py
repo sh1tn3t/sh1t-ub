@@ -71,7 +71,7 @@ class Conversation:
 
     async def ask(self, text: str, *args, **kwargs) -> types.Message:
         """Отправить сообщение
- 
+
         Параметры:
             text (``str``):
                 Текст сообщения
@@ -96,7 +96,7 @@ class Conversation:
         **kwargs
     ) -> types.Message:
         """Отправить файл
- 
+
         Параметры:
             file_path (``str``):
                 Ссылка или путь до файла

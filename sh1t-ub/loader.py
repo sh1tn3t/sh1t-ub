@@ -218,10 +218,10 @@ class Modules:
                         )
 
                         self.inline_handlers = dict(
-                            set(self.inline_handlers) ^ set(module.inline_handlers)
+                            set(self.inline_handlers.items()) ^ set(module.inline_handlers.items())
                         )
                         self.callback_handlers = dict(
-                            set(self.callback_handlers) ^ set(module.callback_handlers)
+                            set(self.callback_handlers.items()) ^ set(module.callback_handlers.items())
                         )
 
                 instance = value()

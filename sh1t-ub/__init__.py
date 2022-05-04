@@ -15,7 +15,7 @@
 #    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 __authors__ = "Sh1tN3t - @sh1tn3t"
-__version__ = "1.3"
+__version__ = "1.3.1"
 
 change_log = """
 Буду сюда писать по поводу изменений.
@@ -135,4 +135,10 @@ example модуль обновлен
 теперь можно создавать модули с инлайн ботом (смотри пример в модуле example)
 добавлен класс Conversation в файле fsm.py для создания диалога, отправка и получение ответов
 обновлен файл requirements.txt
+
+
+Новая версия 1.3.1:
+
+фикс ошибок
+теперь функции <name>_inline_handler и <name>_callback_handler принимают параметр app
 """

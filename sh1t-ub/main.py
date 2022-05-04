@@ -40,7 +40,7 @@ async def main():
 
     app.add_handler(
         MessageHandler(
-            dp._handle_message, filters.all)
+            dp.handle_message, filters.all)
     )
 
     if (restart_msg := db.get("sh1t-ub.loader", "restart_msg")):

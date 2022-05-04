@@ -19,6 +19,8 @@ import re
 import logging
 import asyncio
 
+import inspect
+
 import html
 import string
 import random
@@ -112,6 +114,7 @@ class InlineManager:
         return True
 
     async def _create_bot(self) -> Union[str, None]:
+        """Создать и настроить бота"""
         logging.info("Начался процесс создания нового бота...")
 
         async with fsm.Conversation(self._app, "@BotFather", True) as conv:
@@ -168,6 +171,7 @@ class InlineManager:
             return token
 
     async def _revoke_token(self) -> str:
+        """Сбросить токен бота"""
         async with fsm.Conversation(self._app, "@BotFather", True) as conv:
             try:
                 await conv.ask("/cancel")
@@ -178,7 +182,7 @@ class InlineManager:
 
             await conv.ask("/revoke")
             response = await conv.get_response()
- 
+
             if "/newbot" in response.text:
                 return logging.error("Нет созданных ботов")
 
@@ -198,6 +202,7 @@ class InlineManager:
             return search.group(0)
 
     async def _inline_handler(self, inline_query: InlineQuery) -> InlineQuery:
+        """Обработчик инлайн-хендеров"""
         if not (query := inline_query.query):
             name = html.escape(utils.get_display_name(self._me))
             mention = f"<a href=\"tg://user?id={self._me.id}\">{name}</a>"
@@ -206,7 +211,7 @@ class InlineManager:
                 f"😎 <b>Sh1tN3t UserBot</b>\n\n"
                 f"🔢 <b>Версия</b>: v{__version__}\n"
                 f"👤 <b>Владелец</b>: {mention}" + (
-                    f"\n\n👉 <b>Использование</b>: <code>@sh1tuserbot</code> &lt;команда&gt; [аргументы]"
+                    f"\n\n👉 <b>Использование</b>: <code>@{(await self.bot.me).username}</code> &lt;команда&gt; [аргументы]"
                     if inline_query.from_user.id == self._me.id
                     else ""
                 )
@@ -246,16 +251,23 @@ class InlineManager:
             )
 
         try:
-            await func(inline_query)
+            if (
+                len(vars_ := inspect.getfullargspec(func).args) > 3
+                and vars_[3] == "args"
+            ):
+                await func(self._app, inline_query, args)
+            else:
+                await func(self._app, inline_query)
         except Exception as error:
             logging.exception(error)
 
         return inline_query
 
     async def _callback_handler(self, call: CallbackQuery) -> CallbackQuery:
+        """Обработчик каллбек-хендлеров"""
         for func in self._all_modules.callback_handlers.values():
             try:
-                await func(call)
+                await func(self._app, call)
             except Exception as error:
                 logging.exception(error)
 
