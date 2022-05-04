@@ -16,9 +16,18 @@
 
 from asyncio import sleep
 
+from aiogram.types import (
+    InlineQuery,
+    CallbackQuery,
+    InlineQueryResultArticle,
+    InputTextMessageContent,
+    InlineKeyboardMarkup,
+    InlineKeyboardButton
+)
+
 from pyrogram import Client, types
-from .. import loader, utils  # ".." - т.к. модули находятся в папке sh1t-ub/modules, то нам нужно на уровень выше
-                              # loader, modules - файлы из папки sh1t-ub
+from .. import loader, utils, inline  # ".." - т.к. модули находятся в папке sh1t-ub/modules, то нам нужно на уровень выше
+                                      # loader, modules, inline - файлы из папки sh1t-ub
 
 
 @loader.module(name="Example", author="sh1tn3t", version=1)  # name модуля ("name" обязательный аргумент, остальное — нет), author - автор, version - версия
@@ -28,6 +37,31 @@ class ExampleMod(loader.Module):  # Example - название класса мо
 
     def __init__(self):
         self.test_attribute = "Это атрибут модуля"
+
+    async def example_inline_handler(self, inline_query: InlineQuery):  # _inline_handler на конце функции чтобы обозначить что это инлайн-команда
+                                                                        # args - аргументы после команды. необязательный аргумент
+        """Пример инлайн-команды"""
+        await inline_query.answer(
+            [
+                InlineQueryResultArticle(
+                    id=inline.result_id(),
+                    title="Тайтл",
+                    description="Нажми на меня!",
+                    input_message_content=InputTextMessageContent(
+                        "Текст после нажатия на кнопку"),
+                    reply_markup=InlineKeyboardMarkup().add(
+                        InlineKeyboardButton("Текст кнопки", callback_data="example_button_callback"))
+                )
+            ]
+        )
+
+    async def example_callback_handler(self, call: CallbackQuery): # _callback_handler на конце функции чтобы обозначить что это каллбек-хендлер
+        """Пример каллбека"""
+        if call.data != "example_button_callback":  # Сработает только если каллбек дата равняется "example_button_callback"
+            return
+
+        return await call.answer(
+            "Ого пример каллбека", show_alert=True)
 
     async def example_cmd(self, app: Client, message: types.Message, args: str):  # _cmd на конце функции чтобы обозначить что это команда
                                                                                   # args - аргументы после команды. необязательный аргумент

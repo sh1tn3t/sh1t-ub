@@ -29,7 +29,7 @@ from . import database
 def get_full_command(message: Message) -> Union[
     Tuple[Literal[""], Literal[""], Literal[""]], Tuple[str, str, str]
 ]:
-    """Вывести кортеж из команды и аргументов
+    """Вывести кортеж из префикса, команды и аргументов
 
     Параметры:
         message (``pyrogram.types.Message``):
@@ -72,7 +72,7 @@ async def answer(
         response (``str`` | ``typing.Any``):
             Текст или объект которое нужно отправить
 
-        chat_id (``str`` | ``int``):
+        chat_id (``str`` | ``int``, *optional*):
             Чат, в который нужно отправить сообщение
 
         doc/photo (``bool``, *optional*):
@@ -135,14 +135,14 @@ async def answer(
     return messages
 
 
-def run_sync(func: FunctionType, *args, **kwargs):
-    """Запускает асинхронно любую нон-асинк функцию
+def run_sync(func: FunctionType, *args, **kwargs) -> asyncio.Future:
+    """Запускает асинхронно нон-асинк функцию
 
     Параметры:
         func (``types.FunctionType``):
             Функция для запуска
 
-        args (``str``):
+        args (``list``):
             Аргументы к функции
 
         kwargs (``dict``):
@@ -154,7 +154,7 @@ def run_sync(func: FunctionType, *args, **kwargs):
     )
 
 
-def get_message_media(message: Message):
+def get_message_media(message: Message) -> Union[str, None]:
     """Получить медиа с сообщения, если есть
 
     Параметры:
@@ -164,17 +164,16 @@ def get_message_media(message: Message):
     return getattr(message, message.media or "", None)
 
 
-def get_media_ext(message: Message):
+def get_media_ext(message: Message) -> Union[str, None]:
     """Получить расширение файла
 
     Параметры:
         message (``pyrogram.types.Message``):
             Сообщение
     """
-    if not message.media:
-        return False
+    if not (media := get_message_media(message)):
+        return None
 
-    media = get_message_media(message)
     media_mime_type = getattr(media, "mime_type", "")
     extension = message._client.mimetypes.guess_extension(media_mime_type)
 
@@ -189,7 +188,7 @@ def get_media_ext(message: Message):
     return extension
 
 
-def get_display_name(entity: Union[User, Chat]):
+def get_display_name(entity: Union[User, Chat]) -> str:
     """Получить отображаемое имя
 
     Параметры:

@@ -22,7 +22,9 @@ import configparser
 from datetime import datetime
 from getpass import getpass
 
-from pyrogram import Client, errors
+from typing import Union, Tuple
+
+from pyrogram import Client, types, errors
 from pyrogram.session.session import Session
 
 from . import __version__
@@ -30,7 +32,7 @@ from . import __version__
 Session.notice_displayed = True
 
 
-def colored_input(prompt: str = "", hide: bool = False):
+def colored_input(prompt: str = "", hide: bool = False) -> str:
     """Цветной инпут"""
     frame = sys._getframe(1)
     return (input if not hide else getpass)(
@@ -46,14 +48,14 @@ def colored_input(prompt: str = "", hide: bool = False):
 class Auth:
     """Авторизация в аккаунт"""
 
-    def __init__(self, session_name: str = "../sh1t-ub"):
-        self.check_api_tokens()
+    def __init__(self, session_name: str = "../sh1t-ub") -> None:
+        self._check_api_tokens()
         self.app = Client(
             session_name=session_name, config_file="./config.ini",
             parse_mode="html", app_version=f"Sh1t-UB v{__version__}"
         )
 
-    def check_api_tokens(self):
+    def _check_api_tokens(self) -> bool:
         """Проверит установлены ли токены, если нет, то начинает установку"""
         config = configparser.ConfigParser()
         if not config.read("./config.ini"):
@@ -67,7 +69,7 @@ class Auth:
 
         return True
 
-    async def send_code(self):
+    async def send_code(self) -> Tuple[str, str]:
         """Отправить код подтверждения"""
         while True:
             try:
@@ -76,7 +78,7 @@ class Auth:
             except errors.BadRequest:
                 logging.error("Неверный номер телефона, попробуй ещё раз")
 
-    async def enter_code(self, phone: str, phone_code_hash: str):
+    async def enter_code(self, phone: str, phone_code_hash: str) -> Union[types.User, bool]:
         """Ввести код подтверждения"""
         try:
             code = colored_input("Введи код подтверждения: ")
@@ -84,7 +86,7 @@ class Auth:
         except errors.SessionPasswordNeeded:
             return False
 
-    async def enter_2fa(self):
+    async def enter_2fa(self) -> types.User:
         """Ввести код двухфакторной аутентификации"""
         while True:
             try:
@@ -93,7 +95,7 @@ class Auth:
             except errors.BadRequest:
                 logging.error("Неверный пароль, попробуй снова")
 
-    async def authorize(self):
+    async def authorize(self) -> Client:
         """Процесс авторизации в аккаунт"""
         await self.app.connect()
 

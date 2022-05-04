@@ -15,6 +15,7 @@
 #    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import logging
+import asyncio
 
 from pyrogram import filters
 from pyrogram.handlers import MessageHandler
@@ -32,11 +33,14 @@ async def main():
     db.init_cloud(app)
 
     modules = loader.Modules(db)
+    asyncio.get_event_loop().create_task(
+        modules.register_all(app))
+
     dp = dispatcher.Dispatcher(modules)
 
     app.add_handler(
         MessageHandler(
-            dp.handle_message, filters.all)
+            dp._handle_message, filters.all)
     )
 
     if (restart_msg := db.get("sh1t-ub.loader", "restart_msg")):
