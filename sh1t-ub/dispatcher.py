@@ -17,14 +17,17 @@
 import logging
 
 from inspect import getfullargspec, iscoroutine
+from types import FunctionType
 
-from pyrogram import Client, types
+from pyrogram import Client, types, filters
+from pyrogram.handlers import MessageHandler
+
 from . import loader, utils
 
 
-async def check_filters(func, app: Client, message: types.Message) -> bool:
+async def check_filters(func: FunctionType, app: Client, message: types.Message) -> bool:
     """Проверка фильтров"""
-    if (filters := getattr(func, "filters", None)):
+    if (filters := getattr(func, "_filters", None)):
         coro = filters(app, message)
         if iscoroutine(coro):
             coro = await coro
@@ -38,13 +41,26 @@ async def check_filters(func, app: Client, message: types.Message) -> bool:
     return True
 
 
-class Dispatcher:
-    """Диспетчер сообщений"""
+class DispatcherManager:
+    """Менеджер диспетчера"""
 
-    def __init__(self, modules: loader.Modules) -> None:
+    def __init__(self, app: Client, modules: "loader.ModulesManager") -> None:
+        self.app = app
         self.modules = modules
 
-    async def handle_message(self, app: Client, message: types.Message) -> types.Message:
+    async def load(self) -> bool:
+        """Загружает менеджер диспетчера"""
+        logging.info("Загрузка диспетчера...")
+
+        self.app.add_handler(
+            MessageHandler(
+                self._handle_message, filters.all)
+        )
+
+        logging.info("Диспетчер успешно загружен")
+        return True
+
+    async def _handle_message(self, app: Client, message: types.Message) -> types.Message:
         """Обработчик сообщений"""
         await self._handle_watchers(app, message)
         await self._handle_other_handlers(app, message)
@@ -53,8 +69,8 @@ class Dispatcher:
         if not (command or args):
             return
 
-        command = self.modules._aliases.get(command, command)
-        func = self.modules.commands.get(command.lower())
+        command = self.modules.aliases.get(command, command)
+        func = self.modules.command_handlers.get(command.lower())
         if not func:
             return
 
@@ -81,7 +97,7 @@ class Dispatcher:
 
     async def _handle_watchers(self, app: Client, message: types.Message) -> types.Message:
         """Обработчик вотчеров"""
-        for watcher in self.modules.watchers:
+        for watcher in self.modules.watcher_handlers:
             try:
                 if not await check_filters(watcher, app, message):
                     continue
@@ -95,7 +111,7 @@ class Dispatcher:
     async def _handle_other_handlers(self, app: Client, message: types.Message) -> types.Message:
         """Обработчик других хендлеров"""
         for handler in app.dispatcher.groups[0]:
-            if getattr(handler.callback, "__func__", None) == Dispatcher.handle_message:
+            if getattr(handler.callback, "__func__", None) == DispatcherManager._handle_message:
                 continue
 
             coro = handler.filters(app, message)

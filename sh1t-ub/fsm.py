@@ -33,7 +33,7 @@ class Conversation:
         purge: bool = False
     ) -> None:
         """Инициализация класса
-        
+
         Параметры:
             app (``pyrogram.Client``):
                 Клиент

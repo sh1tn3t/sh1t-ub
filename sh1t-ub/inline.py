@@ -29,12 +29,14 @@ from loguru import logger
 
 from aiogram import Bot, Dispatcher, exceptions
 from aiogram.types import (
+    Message,
     InlineQuery,
     CallbackQuery,
     InputTextMessageContent,
     InlineQueryResultArticle
 )
 
+from types import FunctionType
 from typing import Union
 
 from pyrogram import Client, errors
@@ -49,14 +51,14 @@ def result_id(size: int = 10) -> str:
     )
 
 
-class InlineManager:
-    """Инлайн бот"""
+class BotManager:
+    """Менеджер бота"""
 
     def __init__(
         self,
         app: Client,
         db: database.Database,
-        all_modules: "loader.Modules"
+        all_modules: "loader.ModulesManager"
     ) -> None:
         """Инициализация класса
 
@@ -76,9 +78,29 @@ class InlineManager:
 
         self._token = self._db.get("sh1t-ub.inline", "token", None)
 
-    async def register_manager(self) -> bool:
-        """Регистрирует менеджер инлайн бота"""
-        self._me = await self._app.get_me()
+    async def _check_filters(
+        self,
+        func: FunctionType,
+        module: "loader.Module",
+        update_type: Union[Message, InlineQuery, CallbackQuery],
+    ) -> bool:
+        """Проверка фильтров"""
+        if (filters := getattr(func, "_filters", None)):
+            coro = filters(module, self._app, update_type)
+            if inspect.iscoroutine(coro):
+                coro = await coro
+
+            if not coro:
+                return False
+        else:
+            if update_type.from_user.id != self._all_modules.me.id:
+                return False
+
+        return True
+
+    async def load(self) -> bool:
+        """Загружает менеджер бота"""
+        logging.info("Загрузка менеджера бота...")
 
         if not self._token:
             self._token = await self._create_bot()
@@ -98,9 +120,10 @@ class InlineManager:
                     return
 
                 self._db.set("sh1t-ub.inline", "token", self._token)
-                return await self.register_manager()
+                return await self.load()
 
         self._dp = Dispatcher(self.bot)
+
         self._dp.register_inline_handler(
             self._inline_handler, lambda _: True
         )
@@ -111,6 +134,7 @@ class InlineManager:
         asyncio.ensure_future(
             self._dp.start_polling())
 
+        logging.info("Менеджер бота успешно загружен")
         return True
 
     async def _create_bot(self) -> Union[str, None]:
@@ -135,7 +159,7 @@ class InlineManager:
                 logging.error("Произошла ошибка при создании бота")
                 return False
 
-            await conv.ask(f"Sh1tN3t UserBot of {utils.get_display_name(self._me)[:45]}")
+            await conv.ask(f"Sh1tN3t UserBot of {utils.get_display_name(self._all_modules.me)[:45]}")
             await conv.get_response()
 
             bot_username = f"sh1tub_{result_id(6)}_bot"
@@ -204,32 +228,26 @@ class InlineManager:
     async def _inline_handler(self, inline_query: InlineQuery) -> InlineQuery:
         """Обработчик инлайн-хендеров"""
         if not (query := inline_query.query):
-            name = html.escape(utils.get_display_name(self._me))
-            mention = f"<a href=\"tg://user?id={self._me.id}\">{name}</a>"
+            commands = ""
+            for command, func in self._all_modules.inline_handlers.items():
+                if await self._check_filters(func, func.__self__, inline_query):
+                    commands += f"\n💬 <code>@{(await self.bot.me).username} {command}</code>"
 
             message = InputTextMessageContent(
-                f"😎 <b>Sh1tN3t UserBot</b>\n\n"
-                f"🔢 <b>Версия</b>: v{__version__}\n"
-                f"👤 <b>Владелец</b>: {mention}" + (
-                    f"\n\n👉 <b>Использование</b>: <code>@{(await self.bot.me).username}</code> &lt;команда&gt; [аргументы]"
-                    if inline_query.from_user.id == self._me.id
-                    else ""
-                )
+                f"👇 <b>Доступные команды</b>\n"
+                f"{commands}"
             )
 
             return await inline_query.answer(
                 [
                     InlineQueryResultArticle(
                         id=result_id(),
-                        title="Информация ",
+                        title="Доступные команды",
                         input_message_content=message,
-                        thumb_url="https://api.fl1yd.su/emoji/2139-fe0f.png",
+                        thumb_url="https://api.fl1yd.su/emoji/1f4ac.png",
                     )
                 ], cache_time=0
             )
-
-        if inline_query.from_user.id != self._me.id:
-            return
 
         query_ = query.split()
 
@@ -244,11 +262,14 @@ class InlineManager:
                         id=result_id(),
                         title="Ошибка",
                         input_message_content=InputTextMessageContent(
-                            "❌ Такого инлайн-команды нет"),
+                            "❌ Такой инлайн-команды нет"),
                         thumb_url="https://api.fl1yd.su/emoji/274c.png"
                     )
                 ], cache_time=0
             )
+
+        if not await self._check_filters(func, func.__self__, inline_query):
+            return
 
         try:
             if (
@@ -266,6 +287,8 @@ class InlineManager:
     async def _callback_handler(self, call: CallbackQuery) -> CallbackQuery:
         """Обработчик каллбек-хендлеров"""
         for func in self._all_modules.callback_handlers.values():
+            if not await self._check_filters(func, func.__self__, call):
+                continue
             try:
                 await func(self._app, call)
             except Exception as error:

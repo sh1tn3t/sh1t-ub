@@ -32,7 +32,7 @@ from typing import Union, List, Dict
 from types import FunctionType, LambdaType
 
 from pyrogram import Client, filters
-from . import utils, database, inline
+from . import dispatcher, utils, database, inline
 
 
 def module(
@@ -40,8 +40,20 @@ def module(
     author: str = None,
     version: Union[int, float] = None
 ) -> FunctionType:
-    """Декоратор для обработки класса модуля"""
+    """Обрабатывает класс модуля
+
+    Параметры:
+        name (``str``):
+            Название модуля
+
+        author (``str``, *optional*):
+            Автор модуля
+
+        version (``int`` | ``float``, *optional*):
+            Версия модуля
+    """
     def decorator(instance: "Module"):
+        """Декоратор для обработки класса модуля"""
         instance.name = name
         instance.author = author
         instance.version = version
@@ -75,7 +87,7 @@ class StringLoader(SourceLoader):
         return self.data
 
 
-def get_commands(instance: Module) -> Dict[str, FunctionType]:
+def get_command_handlers(instance: Module) -> Dict[str, FunctionType]:
     """Возвращает словарь из названий с функциями команд"""
     return {
         method_name[:-4].lower(): getattr(
@@ -89,12 +101,16 @@ def get_commands(instance: Module) -> Dict[str, FunctionType]:
     }
 
 
-def get_watchers(instance: Module) -> List[FunctionType]:
+def get_watcher_handlers(instance: Module) -> List[FunctionType]:
     """Возвращает список из вотчеров"""
-    return filter(
-        lambda method: callable(method)
-            and method.__name__.startswith("watcher"), dir(instance)
-    )
+    return [
+        getattr(instance, method_name)
+        for method_name in dir(instance)
+        if (
+            callable(getattr(instance, method_name))
+            and method_name.startswith("watcher")
+        )
+    ]
 
 
 def get_inline_handlers(instance: Module) -> Dict[str, FunctionType]:
@@ -128,12 +144,19 @@ def get_callback_handlers(instance: Module) -> Dict[str, FunctionType]:
 def on(custom_filters: Union[filters.Filter, LambdaType]) -> FunctionType:
     """Создает фильтр для команды
 
-        Параметры:
-            custom_filters (``pyrogram.filters.Filter`` | ``types.LambdaType``):
-                Фильтр
+    Параметры:
+        custom_filters (``pyrogram.filters.Filter`` | ``types.LambdaType``):
+            Фильтры
+
+    Пример:
+        >>> @on(lambda _, app, message: message.chat.type == "supergroup")
+        >>> @on(pyrogram.filters.chats("@sh1tubchat"))
+        >>> async def func_cmd(self, app: Client, message: types.Message):
+        >>>     ...
     """
     def decorator(func: FunctionType):
-        func.filters = (
+        """Декоратор для обработки команды"""
+        func._filters = (
             filters.create(custom_filters)
             if custom_filters.__module__ != "pyrogram.filters"
             else custom_filters
@@ -142,28 +165,62 @@ def on(custom_filters: Union[filters.Filter, LambdaType]) -> FunctionType:
     return decorator
 
 
-class Modules:
-    """Класс хранящий в себе загруженные модули"""
+def on_bot(custom_filters: LambdaType) -> FunctionType:
+    """Создает фильтр для команды бота
+
+    Параметры:
+        custom_filters (``types.FunctionType`` | ``types.LambdaType``):
+            Фильтры.
+            Функция должна принимать параметры self, app, message/inline_query/call
+
+    Пример:
+        >>> @on_bot(lambda self, app, call: call.from_user.id == self.all_modules.me.id)
+        >>> async def func_cmd(self, app: Client, message: types.Message):
+        >>>     ...
+    """
+    def decorator(func: FunctionType):
+        """Декоратор для обработки команды бота"""
+        func._filters = custom_filters
+        return func
+    return decorator
+
+
+class ModulesManager:
+    """Менеджер модулей"""
 
     def __init__(self, db: database.Database) -> None:
         self.modules: List[Module] = []
-        self.watchers: List[FunctionType] = []
+        self.watcher_handlers: List[FunctionType] = []
 
-        self.commands: Dict[str, FunctionType] = {}
+        self.command_handlers: Dict[str, FunctionType] = {}
         self.inline_handlers: Dict[str, FunctionType] = {}
         self.callback_handlers: Dict[str, FunctionType] = {}
 
         self._local_modules_path: str = "sh1t-ub/modules/"
 
         self._db = db
+        self.aliases = self._db.get(__name__, "aliases", {})
 
-        self._prefixes = self._db.get("sh1t-ub.loader", "prefixes", ["-"])
-        self._aliases = self._db.get(__name__, "aliases", {})
+        self.me = None
+        self.dp = None
+        self.inline = None
 
-    async def register_all(self, app: Client) -> bool:
-        """Регистрирует все модули"""
-        self.inline = inline.InlineManager(app, self._db, self)
-        await self.inline.register_manager()
+    async def cache(self, app: Client) -> bool:
+        """Кэширует"""
+        self.me = await app.get_me()
+        return True
+
+    async def load(self, app: Client) -> bool:
+        """Загружает менеджер модулей"""
+        await self.cache(app)
+
+        self.dp = dispatcher.DispatcherManager(app, self)
+        await self.dp.load()
+
+        self.inline = inline.BotManager(app, self._db, self)
+        await self.inline.load()
+
+        logging.info("Загрузка модулей...")
 
         for local_module in filter(
             lambda file_name: file_name.endswith(".py")
@@ -183,11 +240,12 @@ class Modules:
         for custom_module in self._db.get(__name__, "modules", []):
             try:
                 r = await utils.run_sync(requests.get, custom_module)
-                await self.load_module(r.text, r.url)
+                self.load_module(r.text, r.url)
             except requests.exceptions.ConnectionError as error:
                 logging.exception(
                     f"Ошибка при загрузке стороннего модуля {custom_module}: {error}")
 
+        logging.info("Менеджер модулей загружен")
         return True
 
     def register_instance(
@@ -212,36 +270,26 @@ class Modules:
 
                 for module in self.modules:
                     if module.__class__.__name__ == value.__name__:
-                        self.modules.remove(module)
-                        self.watchers = list(
-                            set(self.watchers) ^ set(module.watchers)
-                        )
-
-                        self.inline_handlers = dict(
-                            set(self.inline_handlers.items()) ^ set(module.inline_handlers.items())
-                        )
-                        self.callback_handlers = dict(
-                            set(self.callback_handlers.items()) ^ set(module.callback_handlers.items())
-                        )
+                        self.unload_module(module, True)
 
                 instance = value()
-                instance.commands = get_commands(instance)
-                instance.watchers = get_watchers(instance)
+                instance.command_handlers = get_command_handlers(instance)
+                instance.watcher_handlers = get_watcher_handlers(instance)
 
                 instance.inline = self.inline
                 instance.inline_handlers = get_inline_handlers(instance)
                 instance.callback_handlers = get_callback_handlers(instance)
 
                 self.modules.append(instance)
-                self.commands.update(instance.commands)
-                self.watchers.extend(instance.watchers)
+                self.command_handlers.update(instance.command_handlers)
+                self.watcher_handlers.extend(instance.watcher_handlers)
 
                 self.inline_handlers.update(instance.inline_handlers)
                 self.callback_handlers.update(instance.callback_handlers)
 
         return instance
 
-    async def load_module(self, module_source: str, origin: str = "<string>") -> str:
+    def load_module(self, module_source: str, origin: str = "<string>") -> str:
         """Загружает сторонний модуль"""
         module_name = "sh1t-ub.modules." + (
             "".join(random.choice(string.ascii_letters + string.digits)
@@ -258,25 +306,38 @@ class Modules:
 
         return instance.name
 
-    async def unload_module(self, module_name: str) -> str:
+    def unload_module(self, module_name: str = None, is_replace: bool = False) -> str:
         """Выгружает загруженный (если он загружен) модуль"""
-        if not (module := self.get_module(module_name)):
-            return False
+        if is_replace:
+            module = module_name
+        else:
+            if not (module := self.get_module(module_name)):
+                return False
 
-        if (get_module := inspect.getmodule(module)).__spec__.origin != "<string>":
-            set_modules = set(self._db.get(__name__, "modules", []))
-            self._db.set("sh1t-ub.loader", "modules",
-                        list(set_modules - {get_module.__spec__.origin}))
+            if (get_module := inspect.getmodule(module)).__spec__.origin != "<string>":
+                set_modules = set(self._db.get(__name__, "modules", []))
+                self._db.set("sh1t-ub.loader", "modules",
+                             list(set_modules - {get_module.__spec__.origin}))
+
+            for alias, command in self.aliases.copy().items():
+                if command in module.command_handlers:
+                    del self.aliases[alias]
+                    del self.command_handlers[command]
 
         self.modules.remove(module)
-        self.watchers = list(
-            set(self.watchers) ^ set(module.watchers)
+        self.command_handlers = dict(
+            set(self.command_handlers.items()) ^ set(module.command_handlers.items())
+        )
+        self.watcher_handlers = list(
+            set(self.watcher_handlers) ^ set(module.watcher_handlers)
         )
 
-        for alias, command in self._aliases.copy().items():
-            if command in module.commands:
-                del self._aliases[alias]
-                del self.commands[command]
+        self.inline_handlers = dict(
+            set(self.inline_handlers.items()) ^ set(module.inline_handlers.items())
+        )
+        self.callback_handlers = dict(
+            set(self.callback_handlers.items()) ^ set(module.callback_handlers.items())
+        )
 
         return module.name
 
@@ -292,7 +353,7 @@ class Modules:
         ):
             return module[0]
 
-        if by_commands_too and name in self.commands:
-            return self.commands[name].__self__
+        if by_commands_too and name in self.command_handlers:
+            return self.command_handlers[name].__self__
 
         return None

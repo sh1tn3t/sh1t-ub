@@ -40,7 +40,7 @@ class ExampleMod(loader.Module):  # Example - название класса мо
 
     async def example_inline_handler(self, app: Client, inline_query: InlineQuery, args: str):  # _inline_handler на конце функции чтобы обозначить что это инлайн-команда
                                                                                                 # args - аргументы после команды. необязательный аргумент
-        """Пример инлайн-команды"""
+        """Пример инлайн-команды. Использование: @bot example [аргументы]"""
         await inline_query.answer(
             [
                 InlineQueryResultArticle(
@@ -58,17 +58,15 @@ class ExampleMod(loader.Module):  # Example - название класса мо
             ]
         )
 
-    async def example_callback_handler(self, app: Client, call: CallbackQuery): # _callback_handler на конце функции чтобы обозначить что это каллбек-хендлер
+    @loader.on_bot(lambda self, app, call: call.data == "example_button_callback")  # Сработает только если каллбек дата равняется "example_button_callback"
+    async def example_callback_handler(self, app: Client, call: CallbackQuery):  # _callback_handler на конце функции чтобы обозначить что это каллбек-хендлер
         """Пример каллбека"""
-        if call.data != "example_button_callback":  # Сработает только если каллбек дата равняется "example_button_callback"
-            return
-
         return await call.answer(
             "Ого пример каллбека", show_alert=True)
 
     async def example_cmd(self, app: Client, message: types.Message, args: str):  # _cmd на конце функции чтобы обозначить что это команда
                                                                                   # args - аргументы после команды. необязательный аргумент
-        """Описание команды"""
+        """Описание команды. Использование: example [аргументы]"""
         await utils.answer(  # utils.answer - это круто
             message, "Ого пример команды" + (
                 f"\nАргументы: {args}" if args
@@ -80,10 +78,11 @@ class ExampleMod(loader.Module):  # Example - название класса мо
         return await utils.answer(
             message, "Прошло 2.5 секунды!")
 
-    @loader.on(lambda _, __, m: m and m.text and "тест" in m.text)  # Сработает только если есть "тест" в сообщении с командой
+    @loader.on(lambda _, __, m: "тест" in getattr(m, "text", ""))  # Сработает только если есть "тест" в сообщении с командой
     async def example2_cmd(self, app: Client, message: types.Message):
         """Описание для второй команды с фильтрами"""
-        return await utils.answer(message, f"Да, {self.test_attribute = }")
+        return await utils.answer(
+            message, f"Да, {self.test_attribute = }")
 
     @loader.on(lambda _, __, m: m and m.text == "Привет, это проверка вотчера щит-юб")
     async def watcher(self, app: Client, message: types.Message):  # watcher - функция которая работает при получении нового сообщения

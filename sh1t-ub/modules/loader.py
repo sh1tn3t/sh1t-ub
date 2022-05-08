@@ -14,6 +14,8 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import logging
+
 import os
 import re
 import sys
@@ -99,7 +101,7 @@ class LoaderMod(loader.Module):
             if r.status_code != 200:
                 raise requests.exceptions.ConnectionError
 
-            if not (module_name := await self.all_modules.load_module(r.text, r.url)):
+            if not (module_name := self.all_modules.load_module(r.text, r.url)):
                 error_text = "❌ Не удалось загрузить модуль. Подробности смотри в логах"
         except requests.exceptions.MissingSchema:
             error_text = "❌ Ссылка указана неверно"
@@ -140,7 +142,7 @@ class LoaderMod(loader.Module):
             return await utils.answer(
                 message, "❌ Неверная кодировка файла")
 
-        if not (module_name := await self.all_modules.load_module(module_source)):
+        if not (module_name := self.all_modules.load_module(module_source)):
             return await utils.answer(
                 message, "❌ Не удалось загрузить модуль. Подробности смотри в логах")
 
@@ -150,7 +152,7 @@ class LoaderMod(loader.Module):
 
     async def unloadmod_cmd(self, app: Client, message: types.Message, args: str):
         """Выгрузить модуль. Использование: unloadmod <название модуля>"""
-        if not (module_name := await self.all_modules.unload_module(args)):
+        if not (module_name := self.all_modules.unload_module(args)):
             return await utils.answer(
                 message, "❌ Неверное название модуля")
 
@@ -168,6 +170,8 @@ class LoaderMod(loader.Module):
         atexit.register(restart)
 
         await utils.answer(message, "🔁 Перезагрузка...")
+
+        logging.info("Перезагрузка...")
         return sys.exit(0)
 
     async def update_cmd(self, app: Client, message: types.Message):

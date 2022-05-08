@@ -15,13 +15,9 @@
 #    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import logging
-import asyncio
 
-from pyrogram import filters
-from pyrogram.handlers import MessageHandler
 from pyrogram.methods.utilities.idle import idle
-
-from . import auth, database, loader, dispatcher
+from . import auth, database, loader
 
 
 async def main():
@@ -32,16 +28,8 @@ async def main():
     db = database.db
     db.init_cloud(app)
 
-    modules = loader.Modules(db)
-    asyncio.get_event_loop().create_task(
-        modules.register_all(app))
-
-    dp = dispatcher.Dispatcher(modules)
-
-    app.add_handler(
-        MessageHandler(
-            dp.handle_message, filters.all)
-    )
+    modules = loader.ModulesManager(db)
+    await modules.load(app)
 
     if (restart_msg := db.get("sh1t-ub.loader", "restart_msg")):
         msg = await app.get_messages(*map(int, restart_msg.split(":")))
@@ -56,7 +44,7 @@ async def main():
 
     prefix = db.get("sh1t-ub.loader", "prefixes", ["-"])[0]
     logging.info(
-        f"Стартовал для [ID: {(await app.get_me()).id}] успешно, введи {prefix}help в чате для получения списка команд"
+        f"Стартовал для [ID: {modules.me.id}] успешно, введи {prefix}help в чате для получения списка команд"
     )
 
     await idle()

@@ -14,6 +14,13 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import sys
+
+if sys.version_info < (3, 8, 0):
+    print("Требуется Python 3.8 или выше")
+    sys.exit(1)
+
+
 import asyncio
 import argparse
 

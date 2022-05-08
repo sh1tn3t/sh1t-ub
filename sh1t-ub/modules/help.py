@@ -14,7 +14,7 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from pyrogram import Client, types
+from pyrogram import Client, filters, types
 from .. import loader, utils, __version__
 
 
@@ -25,16 +25,29 @@ class HelpMod(loader.Module):
     async def help_cmd(self, app: Client, message: types.Message, args: str):
         """Список всех модулей"""
         if not args:
-            msg = "\n".join(
-                f"• <b>{module.name}</b> ➜ " + (
-                    " <b>|</b> ".join(
-                        f"<code>{command}</code>" for command in module.commands
-                    )
-                ) for module in self.all_modules.modules
-            )
+            text = ""
+            for module in self.all_modules.modules:
+                commands = inline = ""
+
+                commands += " <b>|</b> ".join(
+                    f"<code>{command}</code>" for command in module.command_handlers
+                )
+
+                if module.inline_handlers:
+                    if commands:
+                        inline += " <b>|| [inline]</b>: "
+                    else:
+                        inline += "<b>[inline]</b>: "
+
+                inline += " <b>|</b> ".join(
+                    f"<code>{inline_command}</code>" for inline_command in module.inline_handlers
+                )
+
+                text += f"\n<b>{module.name}</b> ➜ " + commands + inline
+
             return await utils.answer(
-                message, f"🗄 Доступные модули Sh1tN3t-UserBot: <b>{len(self.all_modules.modules)}</b>\n\n"
-                         f"{msg}"
+                message, f"🗄 Доступные модули Sh1tN3t-UserBot: <b>{len(self.all_modules.modules)}</b>\n"
+                         f"{text}"
             )
 
         if not (module := self.all_modules.get_module(args)):
@@ -42,10 +55,17 @@ class HelpMod(loader.Module):
                 message, "❌ Такого модуля нет")
 
         prefix = self.db.get("sh1t-ub.loader", "prefixes", ["-"])[0]
-        description = "\n".join(
+        bot_username = (await self.inline.bot.me).username
+
+        command_descriptions = "\n".join(
             f"👉 <code>{prefix + command}</code>\n"
-            f"    ╰ {module.commands[command].__doc__ or 'Нет описания для команды'}"
-            for command in module.commands
+            f"    ╰ {module.command_handlers[command].__doc__ or 'Нет описания для команды'}"
+            for command in module.command_handlers
+        )
+        inline_descriptions = "\n".join(
+                f"👉 <code>@{bot_username + ' ' + command}</code>\n"
+                f"    ╰ {module.inline_handlers[command].__doc__ or 'Нет описания для команды'}"
+               for command in module.inline_handlers
         )
 
         header = (
@@ -60,7 +80,7 @@ class HelpMod(loader.Module):
         )
 
         return await utils.answer(
-            message, header + description
+            message, header + command_descriptions + inline_descriptions
         )
 
     async def source_cmd(self, app: Client, message: types.Message):
