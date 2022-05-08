@@ -80,7 +80,7 @@ class HelpMod(loader.Module):
         )
 
         return await utils.answer(
-            message, header + command_descriptions + inline_descriptions
+            message, header + command_descriptions + "\n" + inline_descriptions
         )
 
     async def source_cmd(self, app: Client, message: types.Message):
