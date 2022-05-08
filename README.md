@@ -1,11 +1,13 @@
 <p align="center">
     <img src="https://my.fl1yd.su/sh1t-ub_nobg.png">
     <br>
-    <b>Sh1tN3t UserBot (sh1t-ub)</b> — крутой юзербот, написанный на <a href="https://github.com/pyrogram/pyrogram">Pyrogram</a>
+    <b>Sh1tN3t UserBot (sh1t-ub)</b> — крутой юзербот написанный на <a href="https://github.com/pyrogram/pyrogram">Pyrogram</a>
     <br>
     <a href="https://t.me/sh1tub">Канал с обновлениями</a>
     •
     <a href="https://t.me/sh1tubchat">Чат поддержки</a>
+    •
+    <a href="https://t.me/submodules">Канал с модулями</a>
 </p>
 
 <a href="https://github.com/sh1tn3t/sh1t-ub/stargazers">
@@ -43,6 +45,15 @@ sh1t-ub — это ваш интерактивный многофункцион�
 
 
 <h1>Установка</h1>
+
+<h2>Простая и автоматическая установка<h2>
+
+<a href="https://t.me/lavhostbot?start=U2gxdA">
+    <img src="https://f.lavhost.ml/images/install_to_lavhost.png">
+</a>
+
+
+<h2>Или на свой сервер</h2>
 
 Для начала нужно установить компоненты:
 
@@ -105,3 +116,10 @@ class ExampleMod(loader.Module):
         return await message.reply(
             "Привет, все работает отлично")
 </pre>
+
+
+<h1>Ссылки</h1>
+
+<ul>
+    <li><a href="https://github.com/sh1tn3t/sub-modules">Репозиторий модулей</a></li>
+</ul>
