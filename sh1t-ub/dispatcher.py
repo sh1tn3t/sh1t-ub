@@ -27,8 +27,8 @@ from . import loader, utils
 
 async def check_filters(func: FunctionType, app: Client, message: types.Message) -> bool:
     """Проверка фильтров"""
-    if (filters := getattr(func, "_filters", None)):
-        coro = filters(app, message)
+    if (custom_filters := getattr(func, "_filters", None)):
+        coro = custom_filters(app, message)
         if iscoroutine(coro):
             coro = await coro
 

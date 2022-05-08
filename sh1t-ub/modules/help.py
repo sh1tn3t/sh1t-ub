@@ -14,7 +14,7 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from pyrogram import Client, filters, types
+from pyrogram import Client, types
 from .. import loader, utils, __version__
 
 
@@ -63,9 +63,9 @@ class HelpMod(loader.Module):
             for command in module.command_handlers
         )
         inline_descriptions = "\n".join(
-                f"👉 <code>@{bot_username + ' ' + command}</code>\n"
-                f"    ╰ {module.inline_handlers[command].__doc__ or 'Нет описания для команды'}"
-               for command in module.inline_handlers
+            f"👉 <code>@{bot_username + ' ' + command}</code>\n"
+            f"    ╰ {module.inline_handlers[command].__doc__ or 'Нет описания для команды'}"
+            for command in module.inline_handlers
         )
 
         header = (

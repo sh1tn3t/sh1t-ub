@@ -15,7 +15,7 @@
 #    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 __authors__ = "Sh1tN3t - @sh1tn3t"
-__version__ = "1.4.1"
+__version__ = "1.4.2"
 
 change_log = """
 Буду сюда писать по поводу изменений.
@@ -156,4 +156,10 @@ example модуль обновлен
 Новая версия 1.4.1:
 
 фикс модуля tester
+
+
+Новая версия 1.4.2:
+
+рефактор кода pep8
+исправлена ошибка при добавлении алиаса
 """

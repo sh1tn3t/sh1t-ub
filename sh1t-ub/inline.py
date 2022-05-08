@@ -21,7 +21,6 @@ import asyncio
 
 import inspect
 
-import html
 import string
 import random
 
@@ -85,8 +84,8 @@ class BotManager:
         update_type: Union[Message, InlineQuery, CallbackQuery],
     ) -> bool:
         """Проверка фильтров"""
-        if (filters := getattr(func, "_filters", None)):
-            coro = filters(module, self._app, update_type)
+        if (custom_filters := getattr(func, "_filters", None)):
+            coro = custom_filters(module, self._app, update_type)
             if inspect.iscoroutine(coro):
                 coro = await coro
 

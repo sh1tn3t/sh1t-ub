@@ -50,7 +50,7 @@ class SettingsMod(loader.Module):
             return await utils.answer(
                 message, "❌ Такой алиас уже существует")
 
-        if not self.all_modules.module.command_handlers.get(args[1]):
+        if not self.all_modules.command_handlers.get(args[1]):
             return await utils.answer(
                 message, "❌ Такой команды нет")
 

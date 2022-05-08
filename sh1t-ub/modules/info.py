@@ -60,23 +60,26 @@ def get_info_message(me: types.User):
 
 
 def get_other_info():
-    if platform.system() == "Linux":
-        content = "[linux]\n" + open("/etc/os-release", "r").read()
+    if not platform.system() == "Linux":
+        return "❗ Не Linux"
 
-        config = configparser.ConfigParser()
-        config.read_string(content)
+    with open("/etc/os-release", "r") as file:
+        content = "[linux]\n" + file.read()
 
-        os = platform.system()
-        distro = config["linux"]["PRETTY_NAME"].strip('"')
-        kernel = platform.release()
-        arch = " ".join(platform.architecture())
+    config = configparser.ConfigParser()
+    config.read_string(content)
 
-        return (
-            f"    - ОС: <b>{os}</b>\n"
-            f"    - Дистрибутив: <b>{distro}</b>\n"
-            f"    - Ядро: <b>{kernel}</b>\n"
-            f"    - Архитектура: <b>{arch}</b>"
-        )
+    os = platform.system()
+    distro = config["linux"]["PRETTY_NAME"].strip('"')
+    kernel = platform.release()
+    arch = " ".join(platform.architecture())
+
+    return (
+        f"    - ОС: <b>{os}</b>\n"
+        f"    - Дистрибутив: <b>{distro}</b>\n"
+        f"    - Ядро: <b>{kernel}</b>\n"
+        f"    - Архитектура: <b>{arch}</b>"
+    )
 
 
 def get_cpu_info():
