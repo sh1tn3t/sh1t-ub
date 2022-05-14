@@ -100,7 +100,7 @@ class Auth:
         await self.app.connect()
 
         try:
-            await self.app.get_me()
+            me = await self.app.get_me()
         except errors.AuthKeyUnregistered:
             phone, phone_code_hash = await self.send_code()
             logged = await self.enter_code(phone, phone_code_hash)
@@ -111,4 +111,4 @@ class Auth:
             await self.app.disconnect()
             return sys.exit(64)
 
-        return self.app
+        return me, self.app

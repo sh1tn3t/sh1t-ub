@@ -17,6 +17,9 @@
 import os
 import sys
 
+import re
+import subprocess
+
 import logging
 import string
 import random
@@ -31,8 +34,14 @@ from importlib.util import spec_from_file_location, module_from_spec
 from typing import Union, List, Dict
 from types import FunctionType, LambdaType
 
-from pyrogram import Client, filters
-from . import dispatcher, utils, database, inline
+from pyrogram import Client, types, filters
+from . import dispatcher, utils, database, bot
+
+VALID_URL = r"[-[\]_.~:/?#@!$&'()*+,;%<=>a-zA-Z0-9]+"
+VALID_PIP_PACKAGES = re.compile(
+    r"^\s*# required:(?: ?)((?:{url} )*(?:{url}))\s*$".format(url=VALID_URL),
+    re.MULTILINE,
+)
 
 
 def module(
@@ -64,6 +73,9 @@ def module(
 @module(name="Unknown")
 class Module:
     """Описание модуля"""
+    name: str
+    author: str
+    version: Union[int, float]
 
 
 class StringLoader(SourceLoader):
@@ -113,16 +125,16 @@ def get_watcher_handlers(instance: Module) -> List[FunctionType]:
     ]
 
 
-def get_inline_handlers(instance: Module) -> Dict[str, FunctionType]:
-    """Возвращает словарь из названий с функциями инлайн-хендлеров"""
+def get_message_handlers(instance: Module) -> Dict[str, FunctionType]:
+    """Возвращает словарь из названий с функциями хендлеров сообщений"""
     return {
-        method_name[:-15].lower(): getattr(
+        method_name[:-16].lower(): getattr(
             instance, method_name
         ) for method_name in dir(instance)
         if (
             callable(getattr(instance, method_name))
-            and len(method_name) > 15
-            and method_name.endswith("_inline_handler")
+            and len(method_name) > 16
+            and method_name.endswith("_message_handler")
         )
     }
 
@@ -141,6 +153,20 @@ def get_callback_handlers(instance: Module) -> Dict[str, FunctionType]:
     }
 
 
+def get_inline_handlers(instance: Module) -> Dict[str, FunctionType]:
+    """Возвращает словарь из названий с функциями инлайн-хендлеров"""
+    return {
+        method_name[:-15].lower(): getattr(
+            instance, method_name
+        ) for method_name in dir(instance)
+        if (
+            callable(getattr(instance, method_name))
+            and len(method_name) > 15
+            and method_name.endswith("_inline_handler")
+        )
+    }
+
+
 def on(custom_filters: Union[filters.Filter, LambdaType]) -> FunctionType:
     """Создает фильтр для команды
 
@@ -150,8 +176,11 @@ def on(custom_filters: Union[filters.Filter, LambdaType]) -> FunctionType:
 
     Пример:
         >>> @on(lambda _, app, message: message.chat.type == "supergroup")
-        >>> @on(pyrogram.filters.chats("@sh1tubchat"))
-        >>> async def func_cmd(self, app: Client, message: types.Message):
+        >>> async def func_cmd(
+                self,
+                app: pyrogram.Client,
+                message: pyrogram.types.Message
+            ):
         >>>     ...
     """
     def decorator(func: FunctionType):
@@ -171,11 +200,15 @@ def on_bot(custom_filters: LambdaType) -> FunctionType:
     Параметры:
         custom_filters (``types.FunctionType`` | ``types.LambdaType``):
             Фильтры.
-            Функция должна принимать параметры self, app, message/inline_query/call
+            Функция должна принимать параметры self, app, message/call/inline_query
 
     Пример:
         >>> @on_bot(lambda self, app, call: call.from_user.id == self.all_modules.me.id)
-        >>> async def func_cmd(self, app: Client, message: types.Message):
+        >>> async def func_callback_handler(
+                self,
+                app: pyrogram.Client,
+                call: aiogram.types.CallbackQuery
+            ):
         >>>     ...
     """
     def decorator(func: FunctionType):
@@ -188,37 +221,32 @@ def on_bot(custom_filters: LambdaType) -> FunctionType:
 class ModulesManager:
     """Менеджер модулей"""
 
-    def __init__(self, db: database.Database) -> None:
+    def __init__(self, db: database.Database, me: types.User) -> None:
         self.modules: List[Module] = []
         self.watcher_handlers: List[FunctionType] = []
 
         self.command_handlers: Dict[str, FunctionType] = {}
+        self.message_handlers: Dict[str, FunctionType] = {}
         self.inline_handlers: Dict[str, FunctionType] = {}
         self.callback_handlers: Dict[str, FunctionType] = {}
 
         self._local_modules_path: str = "sh1t-ub/modules/"
 
         self._db = db
+        self.me = me
+
         self.aliases = self._db.get(__name__, "aliases", {})
 
-        self.me = None
-        self.dp = None
-        self.inline = None
-
-    async def cache(self, app: Client) -> bool:
-        """Кэширует"""
-        self.me = await app.get_me()
-        return True
+        self.dp: dispatcher.DispatcherManager  = None
+        self._bot_manager: bot.BotManager = None
 
     async def load(self, app: Client) -> bool:
         """Загружает менеджер модулей"""
-        await self.cache(app)
-
         self.dp = dispatcher.DispatcherManager(app, self)
         await self.dp.load()
 
-        self.inline = inline.BotManager(app, self._db, self)
-        await self.inline.load()
+        self._bot_manager = bot.BotManager(app, self._db, self)
+        await self._bot_manager.load()
 
         logging.info("Загрузка модулей...")
 
@@ -241,7 +269,7 @@ class ModulesManager:
             try:
                 r = await utils.run_sync(requests.get, custom_module)
                 self.load_module(r.text, r.url)
-            except requests.exceptions.ConnectionError as error:
+            except requests.exceptions.RequestException as error:
                 logging.exception(
                     f"Ошибка при загрузке стороннего модуля {custom_module}: {error}")
 
@@ -265,31 +293,33 @@ class ModulesManager:
             if key.endswith("Mod") and issubclass(value, Module):
                 value: Module
 
-                value.db = self._db
-                value.all_modules = self
-
                 for module in self.modules:
                     if module.__class__.__name__ == value.__name__:
                         self.unload_module(module, True)
+
+                value.db = self._db
+                value.all_modules = self
+                value.bot = self._bot_manager.bot
 
                 instance = value()
                 instance.command_handlers = get_command_handlers(instance)
                 instance.watcher_handlers = get_watcher_handlers(instance)
 
-                instance.inline = self.inline
-                instance.inline_handlers = get_inline_handlers(instance)
+                instance.message_handlers = get_message_handlers(instance)
                 instance.callback_handlers = get_callback_handlers(instance)
+                instance.inline_handlers = get_inline_handlers(instance)
 
                 self.modules.append(instance)
                 self.command_handlers.update(instance.command_handlers)
                 self.watcher_handlers.extend(instance.watcher_handlers)
 
-                self.inline_handlers.update(instance.inline_handlers)
+                self.message_handlers.update(instance.message_handlers)
                 self.callback_handlers.update(instance.callback_handlers)
+                self.inline_handlers.update(instance.inline_handlers)
 
         return instance
 
-    def load_module(self, module_source: str, origin: str = "<string>") -> str:
+    def load_module(self, module_source: str, origin: str = "<string>", did_requirements: bool = False) -> str:
         """Загружает сторонний модуль"""
         module_name = "sh1t-ub.modules." + (
             "".join(random.choice(string.ascii_letters + string.digits)
@@ -300,6 +330,37 @@ class ModulesManager:
             spec = ModuleSpec(module_name, StringLoader(
                 module_source, origin), origin=origin)
             instance = self.register_instance(module_name, spec=spec)
+        except ImportError:
+            if did_requirements:
+                return True
+
+            requirements = list(
+                filter(
+                    lambda x: x and x[0] not in ("-", "_", "."),
+                    map(str.strip, VALID_PIP_PACKAGES.search(module_source)[1].split(" ")),
+                )
+            )
+
+            if not requirements:
+                return logging.exception("Не указаны пакеты для установки")
+
+            logging.info("Установка пакетов: %s", ", ".join(requirements) + "...")
+
+            try:
+                subprocess.run(
+                    [
+                        sys.executable,
+                        "-m",
+                        "pip",
+                        "install",
+                        "--user",
+                        *requirements,
+                    ]
+                )
+            except subprocess.CalledProcessError:
+                logging.exception("Ошибка при установке пакетов")
+
+            return self.load_module(module_source, origin, True)
         except Exception as error:
             return logging.exception(
                 f"Ошибка при загрузке модуля {origin}: {error}")

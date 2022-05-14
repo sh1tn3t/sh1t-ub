@@ -23,9 +23,9 @@ from typing import Union
 class CloudDatabase:
     """Чат в Telegram с данными для базы данных"""
 
-    def __init__(self, app: Client):
-        self.app = app
-        self.me = None
+    def __init__(self, app: Client, me: types.User):
+        self._app = app
+        self._me = me
         self.data_chat = None
 
         asyncio.get_event_loop().create_task(
@@ -33,16 +33,15 @@ class CloudDatabase:
 
     async def find_data_chat(self):
         """Информация о чате с данными"""
-        self.me = await self.app.get_me()
         if not self.data_chat:
             chat = [
-                dialog.chat async for dialog in self.app.iter_dialogs()
-                if dialog.chat.title == f"sh1t-{self.me.id}-data"
+                dialog.chat async for dialog in self._app.iter_dialogs()
+                if dialog.chat.title == f"sh1t-{self._me.id}-data"
                 and dialog.chat.type == "supergroup"
             ]
 
             if not chat:
-                self.data_chat = await self.app.create_supergroup(f"sh1t-{self.me.id}-data")
+                self.data_chat = await self._app.create_supergroup(f"sh1t-{self._me.id}-data")
             else:
                 self.data_chat = chat[0]
 
@@ -51,7 +50,7 @@ class CloudDatabase:
     async def save_data(self, message: Union[types.Message, str]):
         """Сохранить данные в чат"""
         return (
-            await self.app.send_message(
+            await self._app.send_message(
                 self.data_chat.id, message
             )
             if isinstance(message, str)
@@ -60,6 +59,6 @@ class CloudDatabase:
 
     async def get_data(self, message_id: int):
         """Найти данные по айди сообщения"""
-        return await self.app.get_messages(
+        return await self._app.get_messages(
             self.data_chat.id, message_id
         )

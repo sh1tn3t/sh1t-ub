@@ -6,3 +6,4 @@ lightdb
 gitpython
 meval
 requests
+psutil

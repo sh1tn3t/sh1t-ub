@@ -14,6 +14,9 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import random
+import string
+
 import asyncio
 import functools
 
@@ -36,7 +39,7 @@ def get_full_command(message: Message) -> Union[
             Сообщение
     """
     message.text = str(message.text or message.caption)
-    prefixes = database.db.get("sh1t-ub.loader", "prefixes", ["-"])
+    prefixes = database.db.get("sh1t-ub.loader", "prefixes", ["."])
 
     for prefix in prefixes:
         if (
@@ -200,4 +203,17 @@ def get_display_name(entity: Union[User, Chat]) -> str:
             " " + entity.last_name
             if entity.last_name else ""
         )
+    )
+
+
+def random_id(size: int = 10) -> str:
+    """Возвращает рандомный идентификатор заданной длины
+    
+    Параметры:
+        size (``int``, *optional*):
+            Длина идентификатора
+    """
+    return "".join(
+        random.choice(string.ascii_letters + string.digits)
+        for _ in range(size)
     )

@@ -29,7 +29,7 @@ from aiogram.types import (
 )
 
 from pyrogram import Client, types
-from .. import loader, utils, inline, __version__
+from .. import loader, utils, __version__
 
 
 INFO_MARKUP = InlineKeyboardMarkup().add(
@@ -59,7 +59,34 @@ def get_info_message(me: types.User):
     )
 
 
+def get_cpu_info():
+    """Возвращает информацию о процессоре"""
+    return (
+        f"    - Использование: <b>{int(psutil.cpu_percent())}</b>%\n"
+        f"    - Ядра: <b>{psutil.cpu_count()}</b>"
+    )
+
+
+def get_ram_info():
+    """Возвращает информацию о памяти"""
+    ram = psutil.virtual_memory()
+    return (
+        f"    - Занято: <b>{humanize(ram.used)}</b> (<b>{int(ram.percent)}</b>%)\n"
+        f"    - Всего: <b>{humanize(ram.total)}</b>"
+    )
+
+
+def get_disk_info():
+    """Возвращает информацию о дисках"""
+    disk = psutil.disk_usage("/")
+    return (
+        f"    - Занято: <b>{humanize(disk.used)}</b> (<b>{int(disk.percent)}</b>%)\n"
+        f"    - Всего: <b>{humanize(disk.total)}</b>"
+    )
+
+
 def get_other_info():
+    """Возвращает прочую информацию"""
     if not platform.system() == "Linux":
         return "❗ Не Linux"
 
@@ -68,9 +95,9 @@ def get_other_info():
 
     config = configparser.ConfigParser()
     config.read_string(content)
+    distro = config["linux"]["PRETTY_NAME"].strip('"')
 
     os = platform.system()
-    distro = config["linux"]["PRETTY_NAME"].strip('"')
     kernel = platform.release()
     arch = " ".join(platform.architecture())
 
@@ -82,34 +109,22 @@ def get_other_info():
     )
 
 
-def get_cpu_info():
-    return (
-        f"    - Использование: <b>{int(psutil.cpu_percent())}</b>%\n"
-        f"    - Ядра: <b>{psutil.cpu_count()}</b>"
-    )
-
-
-def get_ram_info():
-    ram = psutil.virtual_memory()
-    return (
-        f"    - Занято: <b>{humanize(ram.used)}</b> (<b>{int(ram.percent)}</b>%)\n"
-        f"    - Всего: <b>{humanize(ram.total)}</b>"
-    )
-
-
-def get_disk_info():
-    disk = psutil.disk_usage("/")
-    return (
-        f"    - Занято: <b>{humanize(disk.used)}</b> (<b>{int(disk.percent)}</b>%)\n"
-        f"    - Всего: <b>{humanize(disk.total)}</b>"
-    )
-
-
 @loader.module("Information", "sh1tn3t")
 class InformationMod(loader.Module):
     """Информация о юзерботе"""
 
-    @loader.on_bot(lambda self, app, call: True)
+    async def info_cmd(self, app: Client, message: types.Message):
+        """Вызывает инлайн-команду info. Использование: info"""
+        bot_results = await app.get_inline_bot_results(
+            (await self.bot.me).username, "info")
+
+        await app.send_inline_bot_result(
+            message.chat.id, bot_results.query_id,
+            bot_results.results[0].id
+        )
+        return await message.delete()
+
+    @loader.on_bot(lambda self, app, inline_query: True)
     async def info_inline_handler(self, app: Client, inline_query: InlineQuery):
         """Информация о юзерботе. Использование: @bot info"""
         message = InputTextMessageContent(
@@ -118,10 +133,14 @@ class InformationMod(loader.Module):
         return await inline_query.answer(
             [
                 InlineQueryResultArticle(
-                    id=inline.result_id(),
+                    id=utils.random_id(),
                     title="Информация",
                     input_message_content=message,
-                    reply_markup=INFO_SERVER_MARKUP,
+                    reply_markup=(
+                        INFO_SERVER_MARKUP
+                        if inline_query.from_user.id == self.all_modules.me.id
+                        else None
+                    ),
                     thumb_url="https://api.fl1yd.su/emoji/2139-fe0f.png",
                 )
             ], cache_time=0
@@ -132,11 +151,11 @@ class InformationMod(loader.Module):
         """Информация о юзерботе"""
         if call.from_user.id != self.all_modules.me.id:
             return await call.answer(
-                "❗ А эта кнопочка не для тебя!")
+                "❗ А эта кнопочка не для тебя!", True)
 
         await call.answer()
 
-        return await self.inline.bot.edit_message_text(
+        return await self.bot.edit_message_text(
             inline_message_id=call.inline_message_id,
             text=get_info_message(self.all_modules.me),
             reply_markup=INFO_SERVER_MARKUP
@@ -147,7 +166,7 @@ class InformationMod(loader.Module):
         """Информация о сервере"""
         if call.from_user.id != self.all_modules.me.id:
             return await call.answer(
-                "❗ А эта кнопочка не для тебя!")
+                "❗ А эта кнопочка не для тебя!", True)
 
         await call.answer()
 
@@ -163,7 +182,7 @@ class InformationMod(loader.Module):
             f"🗃 <b>Прочее</b>:\n"
             f"{get_other_info()}"
         )
-        return await self.inline.bot.edit_message_text(
+        return await self.bot.edit_message_text(
             inline_message_id=call.inline_message_id,
             text=message,
             reply_markup=INFO_MARKUP

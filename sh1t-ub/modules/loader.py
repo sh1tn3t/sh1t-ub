@@ -15,6 +15,7 @@
 #    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import logging
+import asyncio
 
 import os
 import re
@@ -33,13 +34,19 @@ from git.exc import GitCommandError
 from pyrogram import Client, types
 from .. import loader, utils
 
+VALID_URL = r"[-[\]_.~:/?#@!$&'()*+,;%<=>a-zA-Z0-9]+"
+VALID_PIP_PACKAGES = re.compile(
+    r"^\s*# required:(?: ?)((?:{url} )*(?:{url}))\s*$".format(url=VALID_URL),
+    re.MULTILINE,
+)
+GIT_REGEX = re.compile(
+    r"^https?://github\.com((?:/[a-z0-9-]+){2})(?:/tree/([a-z0-9-]+)((?:/[a-z0-9-]+)*))?/?$",
+    flags=re.IGNORECASE,
+)
+
 
 async def get_git_raw_link(repo_url: str):
     """Получить raw ссылку на репозиторий"""
-    GIT_REGEX = re.compile(
-        r"^https?://github\.com((?:/[a-z0-9-]+){2})(?:/tree/([a-z0-9-]+)((?:/[a-z0-9-]+)*))?/?$",
-        flags=re.IGNORECASE,
-    )
     match = GIT_REGEX.search(repo_url)
     if not match:
         return False
@@ -62,7 +69,7 @@ class LoaderMod(loader.Module):
     """Загрузчик модулей"""
 
     async def dlmod_cmd(self, app: Client, message: types.Message, args: str):
-        """Загрузить модуль по ссылке. Использование: dlmod <ссылка>"""
+        """Загрузить модуль по ссылке. Использование: dlmod <ссылка или all или ничего>"""
         modules_repo = self.db.get(
             "sh1t-ub.loader", "repo",
             "https://github.com/sh1tn3t/sub-modules"
@@ -70,7 +77,9 @@ class LoaderMod(loader.Module):
         api_result = await get_git_raw_link(modules_repo)
         if not api_result:
             return await utils.answer(
-                message, "❌ Неверная ссылка на репозиторий. Поменяйте её с помощью: dlrepo <ссылка на репозиторий или reset>")
+                message, "❌ Неверная ссылка на репозиторий.\n"
+                         "Поменяй её с помощью команды: dlrepo <ссылка на репозиторий или reset>"
+            )
 
         raw_link = api_result
         modules = await utils.run_sync(requests.get, raw_link + "all.txt")
@@ -86,35 +95,69 @@ class LoaderMod(loader.Module):
 
         if not args:
             text = (
-                f"📥 Список доступных модулей с <a href=\"{modules_repo}\">репозитория</a>:\n\n" + "\n".join(
+                f"📥 Список доступных модулей с <a href=\"{modules_repo}\">репозитория</a>:\n\n"
+                + "<code>all</code> - загрузит все модули\n"
+                + "\n".join(
                     map("<code>{}</code>".format, modules))
             )
             return await utils.answer(
                 message, text, disable_web_page_preview=True)
 
         error_text: str = None
-        try:
+        module_name: str = None
+        count = 0
+
+        if args == "all":
+            for module in modules:
+                module = raw_link + module + ".py"
+                try:
+                    r = await utils.run_sync(requests.get, module)
+                    if r.status_code != 200:
+                        raise requests.exceptions.RequestException
+                except requests.exceptions.RequestException:
+                    continue
+
+                if not (module_name := self.all_modules.load_module(r.text, r.url)):
+                    continue
+
+                self.db.set("sh1t-ub.loader", "modules",
+                            list(set(self.db.get("sh1t-ub.loader", "modules", []) + [module])))
+                count += 1
+        else:
             if args in modules:
                 args = raw_link + args + ".py"
 
-            r = await utils.run_sync(requests.get, args)
-            if r.status_code != 200:
-                raise requests.exceptions.ConnectionError
+            try:
+                r = await utils.run_sync(requests.get, args)
+                if r.status_code != 200:
+                    raise requests.exceptions.ConnectionError
 
-            if not (module_name := self.all_modules.load_module(r.text, r.url)):
-                error_text = "❌ Не удалось загрузить модуль. Подробности смотри в логах"
-        except requests.exceptions.MissingSchema:
-            error_text = "❌ Ссылка указана неверно"
-        except requests.exceptions.ConnectionError:
-            error_text = "❌ Модуль недоступен по ссылке"
+                module_name = self.all_modules.load_module(r.text, r.url)
+                if module_name is True:
+                    error_text = "✅ Зависимости установлены. Требуется перезагрузка"
 
-        if error_text:
-            return await utils.answer(message, error_text)
+                if not module_name:
+                    error_text = "❌ Не удалось загрузить модуль. Подробности смотри в логах"
+            except requests.exceptions.MissingSchema:
+                error_text = "❌ Ссылка указана неверно"
+            except requests.exceptions.ConnectionError:
+                error_text = "❌ Модуль недоступен по ссылке"
+            except requests.exceptions.RequestException:
+                error_text = "❌ Произошла непредвиденная ошибка. Подробности смотри в логах"
 
-        self.db.set("sh1t-ub.loader", "modules",
-                    list(set(self.db.get("sh1t-ub.loader", "modules", []) + [args])))
+            if error_text:
+                return await utils.answer(message, error_text)
+
+            self.db.set("sh1t-ub.loader", "modules",
+                        list(set(self.db.get("sh1t-ub.loader", "modules", []) + [args])))
+
         return await utils.answer(
-            message, f"✅ Модуль \"{module_name}\" загружен")
+            message, (
+                f"✅ Модуль \"<code>{module_name}</code>\" загружен"
+                if args != "all"
+                else f"✅ Загружено <b>{count}</b> из <b>{len(modules)}</b> модулей"
+            )
+        )
 
     async def loadmod_cmd(self, app: Client, message: types.Message):
         """Загрузить модуль по файлу. Использование: <реплай на файл>"""
@@ -142,13 +185,18 @@ class LoaderMod(loader.Module):
             return await utils.answer(
                 message, "❌ Неверная кодировка файла")
 
-        if not (module_name := self.all_modules.load_module(module_source)):
+        module_name = self.all_modules.load_module(module_source)
+        if module_name is True:
+            return await utils.answer(
+                message, "✅ Зависимости установлены. Требуется перезагрузка")
+
+        if not module_name:
             return await utils.answer(
                 message, "❌ Не удалось загрузить модуль. Подробности смотри в логах")
 
         temp_file.close()
         return await utils.answer(
-            message, f"✅ Модуль \"{module_name}\" загружен")
+            message, f"✅ Модуль \"<code>{module_name}</code>\" загружен")
 
     async def unloadmod_cmd(self, app: Client, message: types.Message, args: str):
         """Выгрузить модуль. Использование: unloadmod <название модуля>"""
@@ -157,17 +205,24 @@ class LoaderMod(loader.Module):
                 message, "❌ Неверное название модуля")
 
         return await utils.answer(
-            message, f"✅ Модуль \"{module_name}\" выгружен")
+            message, f"✅ Модуль \"<code>{module_name}</code>\" выгружен")
 
-    async def restart_cmd(self, app: Client, message: types.Message):
+    async def restart_cmd(self, app: Client, message: types.Message, update: bool = False):
         """Перезагрузка юзербота"""
-        def restart():
+        def restart() -> None:
             """Запускает загрузку юзербота"""
-            os.execl(sys.executable, sys.executable, "-m", "sh1t-ub")
+            if "LAVHOST" in os.environ:
+                os.system("lavhost restart")
+            else:
+                os.execl(sys.executable, sys.executable, "-m", "sh1t-ub")
 
-        self.db.set("sh1t-ub.loader", "restart_msg",
-                    f"{message.chat.id}:{message.message_id}")
         atexit.register(restart)
+        self.db.set(
+            "sh1t-ub.loader", "restart", {
+                "msg": f"{message.chat.id}:{message.message_id}",
+                "type": "restart" if not update else "update"
+            }
+        )
 
         await utils.answer(message, "🔁 Перезагрузка...")
 
@@ -178,16 +233,35 @@ class LoaderMod(loader.Module):
         """Обновление юзербота"""
         await utils.answer(message, "🔃 Обновление...")
 
-        repo = Repo(".")
-        origin = repo.remote("origin")
+        if "LAVHOST" in os.environ:
+            os.system("lavhost update")
+        else:
+            repo = Repo(".")
+            origin = repo.remote("origin")
 
-        try:
-            origin.pull()
-        except GitCommandError:
-            repo.git.reset("--hard")
-            return await self.update_cmd(app, message)
+            try:
+                origin.pull()
+            except GitCommandError:
+                repo.git.reset("--hard")
+                return await self.update_cmd(app, message)
 
-        return await self.restart_cmd(app, message)
+            pip = await asyncio.create_subprocess_exec(
+                sys.executable,
+                "-m",
+                "pip",
+                "install",
+                "-r",
+                "requirements.txt",
+                "--user",
+            )
+
+            result = await pip.wait()
+            if result != 0:
+                await utils.answer(
+                    message, "❌ Ошибка при установке зависимостей. Подробности смотри в логах")
+                return sys.exit(1)
+
+        return await self.restart_cmd(app, message, True)
 
     async def dlrepo_cmd(self, app: Client, message: types.Message, args: str):
         """Установить репозиторий с модулями. Использование: dlrepo <ссылка на репозиторий или reset>"""

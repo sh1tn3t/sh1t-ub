@@ -22,27 +22,32 @@ from . import auth, database, loader
 
 async def main():
     """Основной цикл юзербота"""
-    app = await auth.Auth().authorize()
+    me, app = await auth.Auth().authorize()
     await app.initialize()
 
     db = database.db
-    db.init_cloud(app)
+    db.init_cloud(app, me)
 
-    modules = loader.ModulesManager(db)
+    modules = loader.ModulesManager(db, me)
     await modules.load(app)
 
-    if (restart_msg := db.get("sh1t-ub.loader", "restart_msg")):
-        msg = await app.get_messages(*map(int, restart_msg.split(":")))
+    if (restart := db.get("sh1t-ub.loader", "restart")):
+        msg = await app.get_messages(*map(int, restart["msg"].split(":")))
         if (
             not msg.empty
             and msg.text != (
-                restarted_text := "✅ Перезагрузка прошла успешно!")
+                restarted_text := (
+                    f"✅ Перезагрузка прошла успешно!"
+                    if restart["type"] == "restart"
+                    else "✅ Обновление прошло успешно!"
+                )
+            )
         ):
             await msg.edit(restarted_text)
 
-        db.pop("sh1t-ub.loader", "restart_msg")
+        db.pop("sh1t-ub.loader", "restart")
 
-    prefix = db.get("sh1t-ub.loader", "prefixes", ["-"])[0]
+    prefix = db.get("sh1t-ub.loader", "prefixes", ["."])[0]
     logging.info(
         f"Стартовал для [ID: {modules.me.id}] успешно, введи {prefix}help в чате для получения списка команд"
     )

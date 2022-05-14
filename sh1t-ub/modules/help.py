@@ -54,8 +54,8 @@ class HelpMod(loader.Module):
             return await utils.answer(
                 message, "❌ Такого модуля нет")
 
-        prefix = self.db.get("sh1t-ub.loader", "prefixes", ["-"])[0]
-        bot_username = (await self.inline.bot.me).username
+        prefix = self.db.get("sh1t-ub.loader", "prefixes", ["."])[0]
+        bot_username = (await self.bot.me).username
 
         command_descriptions = "\n".join(
             f"👉 <code>{prefix + command}</code>\n"

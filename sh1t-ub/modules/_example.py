@@ -17,8 +17,9 @@
 from asyncio import sleep
 
 from aiogram.types import (
-    InlineQuery,
+    Message,
     CallbackQuery,
+    InlineQuery,
     InlineQueryResultArticle,
     InputTextMessageContent,
     InlineKeyboardMarkup,
@@ -26,8 +27,8 @@ from aiogram.types import (
 )
 
 from pyrogram import Client, types
-from .. import loader, utils, inline  # ".." - т.к. модули находятся в папке sh1t-ub/modules, то нам нужно на уровень выше
-                                      # loader, modules, inline - файлы из папки sh1t-ub
+from .. import loader, utils  # ".." - т.к. модули находятся в папке sh1t-ub/modules, то нам нужно на уровень выше
+                              # loader, modules, bot - файлы из папки sh1t-ub
 
 
 @loader.module(name="Example", author="sh1tn3t", version=1)  # name модуля ("name" обязательный аргумент, остальное — нет), author - автор, version - версия
@@ -38,13 +39,20 @@ class ExampleMod(loader.Module):  # Example - название класса мо
     def __init__(self):
         self.test_attribute = "Это атрибут модуля"
 
+    # Если написать в лс/чате где есть бот "ты дурак?", то он ответит 
+    @loader.on_bot(lambda self, app, message: message.text and message.text.lower() == "ты дурак?")  # Сработает только если текст сообщения равняется "ты дурак?"
+    async def example_message_handler(self, app: Client, message: Message):  # _message_handler на конце функции чтобы обозначить что это хендлер сообщения
+        """Пример хендлера сообщения"""
+        return await message.reply(
+            "Сам такой!")
+
     async def example_inline_handler(self, app: Client, inline_query: InlineQuery, args: str):  # _inline_handler на конце функции чтобы обозначить что это инлайн-команда
                                                                                                 # args - аргументы после команды. необязательный аргумент
         """Пример инлайн-команды. Использование: @bot example [аргументы]"""
         await inline_query.answer(
             [
                 InlineQueryResultArticle(
-                    id=inline.result_id(),
+                    id=utils.random_id(),
                     title="Тайтл",
                     description="Нажми на меня!" + (
                         f" Аргументы: {args}" if args
