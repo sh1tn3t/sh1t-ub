@@ -105,7 +105,7 @@ class Auth:
             phone, phone_code_hash = await self.send_code()
             logged = await self.enter_code(phone, phone_code_hash)
             if not logged:
-                await self.enter_2fa()
+                me = await self.enter_2fa()
         except errors.SessionRevoked:
             logging.error("Сессия была сброшена, введи rm sh1t-ub.session и заново введи команду запуска")
             await self.app.disconnect()

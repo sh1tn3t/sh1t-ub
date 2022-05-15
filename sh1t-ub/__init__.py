@@ -15,7 +15,7 @@
 #    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 __authors__ = "Sh1tN3t - @sh1tn3t"
-__version__ = "1.5"
+__version__ = "1.5.1"
 
 change_log = """
 Буду сюда писать по поводу изменений.
@@ -177,4 +177,9 @@ example модуль обновлен
 example модуль обновлен
 теперь можно указывать требуемые библиотеки при установке модуля: "# required: <packages>" в комментариях к модулю
 изменен путь до токена бота в бд, теперь sh1t-ub.bot - token. внести изменения можно: eval db.set("sh1t-ub.bot", "token", db.get("sh1t-ub.inline", "token", None))
+
+
+Новая версия 1.5.1:
+
+фикс ошибки при входе в аккаунт
 """
