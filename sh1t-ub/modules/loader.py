@@ -117,7 +117,7 @@ class LoaderMod(loader.Module):
                 except requests.exceptions.RequestException:
                     continue
 
-                if not (module_name := self.all_modules.load_module(r.text, r.url)):
+                if not (module_name := await self.all_modules.load_module(r.text, r.url)):
                     continue
 
                 self.db.set("sh1t-ub.loader", "modules",
@@ -132,7 +132,7 @@ class LoaderMod(loader.Module):
                 if r.status_code != 200:
                     raise requests.exceptions.ConnectionError
 
-                module_name = self.all_modules.load_module(r.text, r.url)
+                module_name = await self.all_modules.load_module(r.text, r.url)
                 if module_name is True:
                     error_text = "✅ Зависимости установлены. Требуется перезагрузка"
 
@@ -185,7 +185,7 @@ class LoaderMod(loader.Module):
             return await utils.answer(
                 message, "❌ Неверная кодировка файла")
 
-        module_name = self.all_modules.load_module(module_source)
+        module_name = await self.all_modules.load_module(module_source)
         if module_name is True:
             return await utils.answer(
                 message, "✅ Зависимости установлены. Требуется перезагрузка")

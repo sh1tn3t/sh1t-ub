@@ -16,9 +16,12 @@
 
 import logging
 import asyncio
+import sys
 
 from aiogram import Bot, Dispatcher, exceptions
 from pyrogram import Client
+
+from typing import Union, NoReturn
 
 from .events import Events
 from .token_manager import TokenManager
@@ -56,14 +59,16 @@ class BotManager(
 
         self._token = self._db.get("sh1t-ub.bot", "token", None)
 
-    async def load(self) -> bool:
+    async def load(self) -> Union[bool, NoReturn]:
         """Загружает менеджер бота"""
         logging.info("Загрузка менеджера бота...")
+        error_text = "Юзерботу необходим бот. Реши проблему создания бота и запускай юзербот заново"
 
         if not self._token:
             self._token = await self._create_bot()
             if self._token is False:
-                return
+                logging.error(error_text)
+                return sys.exit(1)
 
             self._db.set("sh1t-ub.bot", "token", self._token)
 
@@ -75,7 +80,8 @@ class BotManager(
             if not result:
                 self._token = await self._create_bot()
                 if not self._token:
-                    return
+                    logging.error(error_text)
+                    return sys.exit(1)
 
                 self._db.set("sh1t-ub.bot", "token", self._token)
                 return await self.load()

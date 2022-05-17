@@ -14,8 +14,9 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from asyncio import sleep
+import logging
 
+from asyncio import sleep
 from aiogram.types import (
     Message,
     CallbackQuery,
@@ -38,6 +39,10 @@ class ExampleMod(loader.Module):  # Example - название класса мо
 
     def __init__(self):
         self.test_attribute = "Это атрибут модуля"
+
+    async def on_load(self):  # Можно считать что это асинхронный __init__
+        """Вызывается когда модуль загружен"""
+        logging.info(f"Модуль {self.name} загружен")
 
     # Если написать в лс/чате где есть бот "ты дурак?", то он ответит 
     @loader.on_bot(lambda self, app, message: message.text and message.text.lower() == "ты дурак?")  # Сработает только если текст сообщения равняется "ты дурак?"

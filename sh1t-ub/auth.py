@@ -22,7 +22,7 @@ import configparser
 from datetime import datetime
 from getpass import getpass
 
-from typing import Union, Tuple
+from typing import Union, Tuple, NoReturn
 
 from pyrogram import Client, types, errors
 from pyrogram.session.session import Session
@@ -72,11 +72,24 @@ class Auth:
     async def send_code(self) -> Tuple[str, str]:
         """Отправить код подтверждения"""
         while True:
+            error_text: str = None
+
             try:
                 phone = colored_input("Введи номер телефона: ")
                 return phone, (await self.app.send_code(phone)).phone_code_hash
-            except errors.BadRequest:
-                logging.error("Неверный номер телефона, попробуй ещё раз")
+            except errors.PhoneNumberInvalid:
+                error_text = "Неверный номер телефона, попробуй ещё раз"
+            except errors.PhoneNumberBanned:
+                error_text = "Номер телефона заблокирован"
+            except errors.PhoneNumberFlood:
+                error_text = "На номере телефона флудвейт"
+            except errors.PhoneNumberUnoccupied:
+                error_text = "Номер не зарегистрирован"
+            except errors.BadRequest as error:
+                error_text = f"Произошла неизвестная ошибка: {error}"
+
+            if error_text:
+                logging.error(error_text)
 
     async def enter_code(self, phone: str, phone_code_hash: str) -> Union[types.User, bool]:
         """Ввести код подтверждения"""
@@ -95,7 +108,7 @@ class Auth:
             except errors.BadRequest:
                 logging.error("Неверный пароль, попробуй снова")
 
-    async def authorize(self) -> Client:
+    async def authorize(self) -> Union[Tuple[types.User, Client], NoReturn]:
         """Процесс авторизации в аккаунт"""
         await self.app.connect()
 

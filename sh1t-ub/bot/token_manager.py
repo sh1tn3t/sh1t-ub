@@ -48,7 +48,8 @@ class TokenManager(Item):
                 phrase not in response.text
                 for phrase in ["That I cannot do.", "Sorry"]
             ):
-                logging.error("Произошла ошибка при создании бота")
+                logging.error(f"Произошла ошибка при создании бота. Ответ @BotFather:")
+                logging.error(response.text)
                 return False
 
             await conv.ask(f"Sh1tN3t UserBot of {utils.get_display_name(self._all_modules.me)[:45]}")
@@ -61,7 +62,8 @@ class TokenManager(Item):
 
             search = re.search(r"(?<=<code>)(.*?)(?=</code>)", response.text.html)
             if not search:
-                return logging.error("Произошла ошибка при создании бота")
+                logging.error("Произошла ошибка при создании бота. Ответ @BotFather:")
+                return logging.error(response.text)
 
             token = search.group(0)
 

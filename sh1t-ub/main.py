@@ -48,9 +48,9 @@ async def main():
         db.pop("sh1t-ub.loader", "restart")
 
     prefix = db.get("sh1t-ub.loader", "prefixes", ["."])[0]
-    logging.info(
-        f"Стартовал для [ID: {modules.me.id}] успешно, введи {prefix}help в чате для получения списка команд"
-    )
+    bot_info = await modules.bot_manager.bot.me
+    logging.info(f"Стартовал для [ID: {modules.me.id}] успешно, введи {prefix}help в чате для получения списка команд")
+    logging.info(f"Твой бот: @{bot_info.username} [ID: {bot_info.id}]")
 
     await idle()
 

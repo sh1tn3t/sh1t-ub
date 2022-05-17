@@ -31,7 +31,7 @@ from importlib.abc import SourceLoader
 from importlib.machinery import ModuleSpec
 from importlib.util import spec_from_file_location, module_from_spec
 
-from typing import Union, List, Dict
+from typing import Union, List, Dict, Any
 from types import FunctionType, LambdaType
 
 from pyrogram import Client, types, filters
@@ -55,10 +55,10 @@ def module(
         name (``str``):
             Название модуля
 
-        author (``str``, *optional*):
+        author (``str``, optional):
             Автор модуля
 
-        version (``int`` | ``float``, *optional*):
+        version (``int`` | ``float``, optional):
             Версия модуля
     """
     def decorator(instance: "Module"):
@@ -77,25 +77,28 @@ class Module:
     author: str
     version: Union[int, float]
 
+    async def on_load(self) -> Any:
+        """Вызывается при загрузке модуля"""
+
 
 class StringLoader(SourceLoader):
     """Загружает модуль со строки"""
 
-    def __init__(self, data: str, origin: str):
+    def __init__(self, data: str, origin: str) -> None:
         self.data = data.encode("utf-8")
         self.origin = origin
 
-    def get_code(self, full_name: str):
+    def get_code(self, full_name: str) -> Union[Any, None]:
         source = self.get_source(full_name)
         if not source:
             return None
 
         return compile(source, self.origin, "exec", dont_inherit=True)
 
-    def get_filename(self, _: str):
+    def get_filename(self, _: str) -> str:
         return self.origin
 
-    def get_data(self, _: str):
+    def get_data(self, _: str) -> str:
         return self.data
 
 
@@ -238,15 +241,15 @@ class ModulesManager:
         self.aliases = self._db.get(__name__, "aliases", {})
 
         self.dp: dispatcher.DispatcherManager  = None
-        self._bot_manager: bot.BotManager = None
+        self.bot_manager: bot.BotManager = None
 
     async def load(self, app: Client) -> bool:
         """Загружает менеджер модулей"""
         self.dp = dispatcher.DispatcherManager(app, self)
         await self.dp.load()
 
-        self._bot_manager = bot.BotManager(app, self._db, self)
-        await self._bot_manager.load()
+        self.bot_manager = bot.BotManager(app, self._db, self)
+        await self.bot_manager.load()
 
         logging.info("Загрузка модулей...")
 
@@ -265,10 +268,12 @@ class ModulesManager:
                 logging.exception(
                     f"Ошибка при загрузке локального модуля {module_name}: {error}")
 
+        await self.send_on_loads()
+
         for custom_module in self._db.get(__name__, "modules", []):
             try:
                 r = await utils.run_sync(requests.get, custom_module)
-                self.load_module(r.text, r.url)
+                await self.load_module(r.text, r.url)
             except requests.exceptions.RequestException as error:
                 logging.exception(
                     f"Ошибка при загрузке стороннего модуля {custom_module}: {error}")
@@ -299,7 +304,7 @@ class ModulesManager:
 
                 value.db = self._db
                 value.all_modules = self
-                value.bot = self._bot_manager.bot
+                value.bot = self.bot_manager.bot
 
                 instance = value()
                 instance.command_handlers = get_command_handlers(instance)
@@ -317,9 +322,12 @@ class ModulesManager:
                 self.callback_handlers.update(instance.callback_handlers)
                 self.inline_handlers.update(instance.inline_handlers)
 
+        if not instance:
+            logging.error("Не удалось найти класс модуля заканчивающийся на `Mod`")
+
         return instance
 
-    def load_module(self, module_source: str, origin: str = "<string>", did_requirements: bool = False) -> str:
+    async def load_module(self, module_source: str, origin: str = "<string>", did_requirements: bool = False) -> str:
         """Загружает сторонний модуль"""
         module_name = "sh1t-ub.modules." + (
             "".join(random.choice(string.ascii_letters + string.digits)
@@ -342,9 +350,9 @@ class ModulesManager:
             )
 
             if not requirements:
-                return logging.exception("Не указаны пакеты для установки")
+                return logging.error("Не указаны пакеты для установки")
 
-            logging.info("Установка пакетов: %s", ", ".join(requirements) + "...")
+            logging.info(f"Установка пакетов: {', '.join(requirements)}...")
 
             try:
                 subprocess.run(
@@ -357,15 +365,40 @@ class ModulesManager:
                         *requirements,
                     ]
                 )
-            except subprocess.CalledProcessError:
-                logging.exception("Ошибка при установке пакетов")
+            except subprocess.CalledProcessError as error:
+                logging.exception(f"Ошибка при установке пакетов: {error}")
 
-            return self.load_module(module_source, origin, True)
+            return await self.load_module(module_source, origin, True)
         except Exception as error:
             return logging.exception(
                 f"Ошибка при загрузке модуля {origin}: {error}")
 
+
+        if not instance:
+            return False
+
+        try:
+            await self.send_on_load(instance)
+        except Exception as error:
+            return logging.exception(error)
+
         return instance.name
+
+    async def send_on_loads(self) -> bool:
+        """Отсылает команды выполнения функции"""
+        for module in self.modules:
+            await self.send_on_load(module)
+
+        return True
+
+    async def send_on_load(self, module: Module) -> bool:
+        """Используется для выполнении функции после загрузки модуля"""
+        try:
+            await module.on_load()
+        except Exception as error:
+            return logging.exception(error)
+
+        return True
 
     def unload_module(self, module_name: str = None, is_replace: bool = False) -> str:
         """Выгружает загруженный (если он загружен) модуль"""

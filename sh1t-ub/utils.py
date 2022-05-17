@@ -75,13 +75,13 @@ async def answer(
         response (``str`` | ``typing.Any``):
             Текст или объект которое нужно отправить
 
-        chat_id (``str`` | ``int``, *optional*):
+        chat_id (``str`` | ``int``, optional):
             Чат, в который нужно отправить сообщение
 
-        doc/photo (``bool``, *optional*):
+        doc/photo (``bool``, optional):
             Если ``True``, сообщение будет отправлено как документ/фото или по ссылке
 
-        kwargs (``dict``, *optional*):
+        kwargs (``dict``, optional):
             Параметры отправки сообщения
     """
     messages: List[Message] = []
@@ -208,9 +208,9 @@ def get_display_name(entity: Union[User, Chat]) -> str:
 
 def random_id(size: int = 10) -> str:
     """Возвращает рандомный идентификатор заданной длины
-    
+
     Параметры:
-        size (``int``, *optional*):
+        size (``int``, optional):
             Длина идентификатора
     """
     return "".join(

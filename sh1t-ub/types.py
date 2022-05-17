@@ -17,7 +17,7 @@
 from pyrogram import types
 
 from types import FunctionType
-from typing import Union, List, Dict
+from typing import Union, List, Dict, Any
 
 from . import database
 
@@ -27,6 +27,9 @@ class Module:
     name: str
     author: str
     version: Union[int, float]
+
+    async def on_load(self) -> Any:
+        """Вызывается при загрузке модуля"""
 
 
 class ModulesManager:
@@ -49,4 +52,4 @@ class ModulesManager:
         self.aliases: Dict[str, str]
 
         self.dp
-        self._bot_manager
+        self.bot_manager

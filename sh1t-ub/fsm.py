@@ -41,7 +41,7 @@ class Conversation:
             chat_id (``str`` | ``int``):
                 Чат, в который нужно отправить сообщение
 
-            purge (``bool``, *optional*):
+            purge (``bool``, optional):
                 Удалять сообщения после завершения диалога
         """
         self.app = app
@@ -76,10 +76,10 @@ class Conversation:
             text (``str``):
                 Текст сообщения
 
-            args (``list``, *optional*):
+            args (``list``, optional):
                 Аргументы отправки сообщения
 
-            kwargs (``dict``, *optional*):
+            kwargs (``dict``, optional):
                 Параметры отправки сообщения
         """
         message = await self.app.send_message(
@@ -104,10 +104,10 @@ class Conversation:
             media_type (``str``):
                 Тип отправляемого медиа
 
-            args (``list``, *optional*):
+            args (``list``, optional):
                 Аргументы отправки сообщения
 
-            kwargs (``dict``, *optional*):
+            kwargs (``dict``, optional):
                 Параметры отправки сообщения
         """
         available_media = [
@@ -129,7 +129,7 @@ class Conversation:
         """Возвращает ответ
 
         Параметр:
-            timeout (``int``, *optional*):
+            timeout (``int``, optional):
                 Время ожидания ответа
         """
         responses = await self.app.get_history(self.chat_id, limit=1)
