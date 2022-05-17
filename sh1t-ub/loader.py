@@ -77,7 +77,7 @@ class Module:
     author: str
     version: Union[int, float]
 
-    async def on_load(self) -> Any:
+    async def on_load(self, app: Client) -> Any:
         """Вызывается при загрузке модуля"""
 
 
@@ -224,7 +224,12 @@ def on_bot(custom_filters: LambdaType) -> FunctionType:
 class ModulesManager:
     """Менеджер модулей"""
 
-    def __init__(self, db: database.Database, me: types.User) -> None:
+    def __init__(
+        self,
+        app: Client,
+        db: database.Database,
+        me: types.User
+    ) -> None:
         self.modules: List[Module] = []
         self.watcher_handlers: List[FunctionType] = []
 
@@ -235,12 +240,13 @@ class ModulesManager:
 
         self._local_modules_path: str = "sh1t-ub/modules/"
 
+        self._app = app
         self._db = db
         self.me = me
 
         self.aliases = self._db.get(__name__, "aliases", {})
 
-        self.dp: dispatcher.DispatcherManager  = None
+        self.dp: dispatcher.DispatcherManager = None
         self.bot_manager: bot.BotManager = None
 
     async def load(self, app: Client) -> bool:
@@ -373,7 +379,6 @@ class ModulesManager:
             return logging.exception(
                 f"Ошибка при загрузке модуля {origin}: {error}")
 
-
         if not instance:
             return False
 
@@ -394,7 +399,7 @@ class ModulesManager:
     async def send_on_load(self, module: Module) -> bool:
         """Используется для выполнении функции после загрузки модуля"""
         try:
-            await module.on_load()
+            await module.on_load(self._app)
         except Exception as error:
             return logging.exception(error)
 

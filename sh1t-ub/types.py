@@ -14,7 +14,7 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from pyrogram import types
+from pyrogram import Client, types
 
 from types import FunctionType
 from typing import Union, List, Dict, Any
@@ -28,7 +28,7 @@ class Module:
     author: str
     version: Union[int, float]
 
-    async def on_load(self) -> Any:
+    async def on_load(self, app: Client) -> Any:
         """Вызывается при загрузке модуля"""
 
 

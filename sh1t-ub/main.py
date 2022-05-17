@@ -37,7 +37,7 @@ async def main():
             not msg.empty
             and msg.text != (
                 restarted_text := (
-                    f"✅ Перезагрузка прошла успешно!"
+                    "✅ Перезагрузка прошла успешно!"
                     if restart["type"] == "restart"
                     else "✅ Обновление прошло успешно!"
                 )
@@ -49,6 +49,7 @@ async def main():
 
     prefix = db.get("sh1t-ub.loader", "prefixes", ["."])[0]
     bot_info = await modules.bot_manager.bot.me
+
     logging.info(f"Стартовал для [ID: {modules.me.id}] успешно, введи {prefix}help в чате для получения списка команд")
     logging.info(f"Твой бот: @{bot_info.username} [ID: {bot_info.id}]")
 

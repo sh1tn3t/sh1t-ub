@@ -48,7 +48,7 @@ class TokenManager(Item):
                 phrase not in response.text
                 for phrase in ["That I cannot do.", "Sorry"]
             ):
-                logging.error(f"Произошла ошибка при создании бота. Ответ @BotFather:")
+                logging.error("Произошла ошибка при создании бота. Ответ @BotFather:")
                 logging.error(response.text)
                 return False
 
