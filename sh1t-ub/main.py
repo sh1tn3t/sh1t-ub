@@ -28,7 +28,7 @@ async def main():
     db = database.db
     db.init_cloud(app, me)
 
-    modules = loader.ModulesManager(db, me)
+    modules = loader.ModulesManager(app, db, me)
     await modules.load(app)
 
     if (restart := db.get("sh1t-ub.loader", "restart")):
